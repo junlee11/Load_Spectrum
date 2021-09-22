@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>mainWindow</class>
+ <widget class="QMainWindow" name="mainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1252</width>
+    <height>823</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>EQP_Local</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="3,7">
+    <item>
+     <widget class="QGroupBox" name="groupBox_2">
+      <property name="title">
+       <string>Local</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_2" rowstretch="1,1,1,13">
+       <property name="sizeConstraint">
+        <enum>QLayout::SetDefaultConstraint</enum>
+       </property>
+       <item row="3" column="0" colspan="2">
+        <widget class="QListWidget" name="list_Local_path"/>
+       </item>
+       <item row="2" column="0">
+        <widget class="QPushButton" name="push_Local_back">
+         <property name="text">
+          <string>Back</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QPushButton" name="push_Local_foward">
+         <property name="text">
+          <string>Foward</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0" colspan="2">
+        <layout class="QVBoxLayout" name="verticalLayout_10">
+         <item>
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>Drive</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QListWidget" name="list_Local_drive">
+           <property name="maximumSize">
+            <size>
+             <width>100</width>
+             <height>16777215</height>
+            </size>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item row="1" column="0" colspan="2">
+        <layout class="QVBoxLayout" name="verticalLayout_11" stretch="0,0">
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="label_11">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>현재 경로</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="line_Local_cur_path"/>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="groupBox">
+      <property name="title">
+       <string>EQP </string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout" rowstretch="2,1,7,7" columnstretch="1,1,2,2">
+       <item row="2" column="0" colspan="2">
+        <layout class="QVBoxLayout" name="verticalLayout_5">
+         <item>
+          <widget class="QLabel" name="label_5">
+           <property name="text">
+            <string>Path1</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QListWidget" name="list_EQP_path1"/>
+         </item>
+        </layout>
+       </item>
+       <item row="2" column="2">
+        <layout class="QVBoxLayout" name="verticalLayout_6">
+         <item>
+          <widget class="QLabel" name="label_6">
+           <property name="text">
+            <string>Path2</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QListWidget" name="list_EQP_path2"/>
+         </item>
+        </layout>
+       </item>
+       <item row="3" column="2">
+        <layout class="QVBoxLayout" name="verticalLayout_8">
+         <item>
+          <widget class="QLabel" name="label_8">
+           <property name="text">
+            <string>Path4</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QListWidget" name="list_EQP_path4"/>
+         </item>
+        </layout>
+       </item>
+       <item row="3" column="0" colspan="2">
+        <layout class="QVBoxLayout" name="verticalLayout_7">
+         <item>
+          <widget class="QLabel" name="label_7">
+           <property name="text">
+            <string>Path3</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QListWidget" name="list_EQP_path3"/>
+         </item>
+        </layout>
+       </item>
+       <item row="0" column="2">
+        <widget class="QPushButton" name="push_manual">
+         <property name="maximumSize">
+          <size>
+           <width>100</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>사용법</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0" colspan="2">
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <item>
+            <widget class="QLabel" name="label">
+             <property name="maximumSize">
+              <size>
+               <width>100</width>
+               <height>20</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Line</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QListWidget" name="list_EQP_line">
+             <property name="maximumSize">
+              <size>
+               <width>100</width>
+               <height>80</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+           <item>
+            <widget class="QLabel" name="label_2">
+             <property name="maximumSize">
+              <size>
+               <width>100</width>
+               <height>20</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Drive</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QListWidget" name="list_EQP_drive">
+             <property name="maximumSize">
+              <size>
+               <width>100</width>
+               <height>80</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_3">
+           <item>
+            <widget class="QLabel" name="label_3">
+             <property name="maximumSize">
+              <size>
+               <width>100</width>
+               <height>20</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>확장자</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QListWidget" name="list_EQP_exe">
+             <property name="maximumSize">
+              <size>
+               <width>100</width>
+               <height>80</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </item>
+       <item row="1" column="0" colspan="3">
+        <layout class="QVBoxLayout" name="verticalLayout_4">
+         <property name="spacing">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="label_10">
+           <property name="text">
+            <string>현재 경로</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="line_EQP_cur_path"/>
+         </item>
+        </layout>
+       </item>
+       <item row="1" column="3" rowspan="3">
+        <layout class="QVBoxLayout" name="verticalLayout_9">
+         <item>
+          <widget class="QLabel" name="label_9">
+           <property name="text">
+            <string>Path5</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QListWidget" name="list_EQP_path5"/>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
+   <zorder>groupBox_2</zorder>
+   <zorder>groupBox</zorder>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1252</width>
+     <height>21</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
