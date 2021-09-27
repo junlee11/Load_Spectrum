@@ -14,7 +14,7 @@
    <string>EQP_Local</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="3,7">
+   <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="3,0">
     <item>
      <widget class="QGroupBox" name="groupBox_2">
       <property name="title">
@@ -25,17 +25,24 @@
         <enum>QLayout::SetDefaultConstraint</enum>
        </property>
        <item row="3" column="0" colspan="2">
-        <widget class="QListWidget" name="list_Local_path"/>
+        <widget class="QListWidget" name="list_c_path">
+         <property name="dragDropMode">
+          <enum>QAbstractItemView::DropOnly</enum>
+         </property>
+         <property name="selectionMode">
+          <enum>QAbstractItemView::ExtendedSelection</enum>
+         </property>
+        </widget>
        </item>
        <item row="2" column="0">
-        <widget class="QPushButton" name="push_Local_back">
+        <widget class="QPushButton" name="push_c_back">
          <property name="text">
           <string>Back</string>
          </property>
         </widget>
        </item>
        <item row="2" column="1">
-        <widget class="QPushButton" name="push_Local_foward">
+        <widget class="QPushButton" name="push_c_foward">
          <property name="text">
           <string>Foward</string>
          </property>
@@ -60,7 +67,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QListWidget" name="list_Local_drive">
+          <widget class="QListWidget" name="list_c_drive">
            <property name="maximumSize">
             <size>
              <width>100</width>
@@ -90,7 +97,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="line_Local_cur_path"/>
+          <widget class="QLineEdit" name="line_c_cur_path"/>
          </item>
         </layout>
        </item>
@@ -102,77 +109,25 @@
       <property name="title">
        <string>EQP </string>
       </property>
-      <layout class="QGridLayout" name="gridLayout" rowstretch="2,1,7,7" columnstretch="1,1,2,2">
-       <item row="2" column="0" colspan="2">
-        <layout class="QVBoxLayout" name="verticalLayout_5">
-         <item>
-          <widget class="QLabel" name="label_5">
-           <property name="text">
-            <string>Path1</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QListWidget" name="list_EQP_path1"/>
-         </item>
-        </layout>
-       </item>
-       <item row="2" column="2">
-        <layout class="QVBoxLayout" name="verticalLayout_6">
-         <item>
-          <widget class="QLabel" name="label_6">
-           <property name="text">
-            <string>Path2</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QListWidget" name="list_EQP_path2"/>
-         </item>
-        </layout>
-       </item>
-       <item row="3" column="2">
-        <layout class="QVBoxLayout" name="verticalLayout_8">
-         <item>
-          <widget class="QLabel" name="label_8">
-           <property name="text">
-            <string>Path4</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QListWidget" name="list_EQP_path4"/>
-         </item>
-        </layout>
-       </item>
-       <item row="3" column="0" colspan="2">
-        <layout class="QVBoxLayout" name="verticalLayout_7">
-         <item>
-          <widget class="QLabel" name="label_7">
-           <property name="text">
-            <string>Path3</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QListWidget" name="list_EQP_path3"/>
-         </item>
-        </layout>
-       </item>
-       <item row="0" column="2">
-        <widget class="QPushButton" name="push_manual">
-         <property name="maximumSize">
-          <size>
-           <width>100</width>
-           <height>16777215</height>
-          </size>
+      <layout class="QGridLayout" name="gridLayout" rowstretch="2,1,7,7" columnstretch="1,1,0,30">
+       <item row="1" column="0">
+        <layout class="QVBoxLayout" name="verticalLayout_4">
+         <property name="spacing">
+          <number>0</number>
          </property>
-         <property name="text">
-          <string>사용법</string>
-         </property>
-        </widget>
+         <item>
+          <widget class="QLabel" name="label_10">
+           <property name="text">
+            <string>현재 경로</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="line_e_cur_path"/>
+         </item>
+        </layout>
        </item>
-       <item row="0" column="0" colspan="2">
+       <item row="0" column="0">
         <layout class="QHBoxLayout" name="horizontalLayout">
          <item>
           <layout class="QVBoxLayout" name="verticalLayout">
@@ -193,7 +148,37 @@
             </widget>
            </item>
            <item>
-            <widget class="QListWidget" name="list_EQP_line">
+            <widget class="QListWidget" name="list_e_line">
+             <property name="maximumSize">
+              <size>
+               <width>100</width>
+               <height>80</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_12">
+           <item>
+            <widget class="QLabel" name="label_12">
+             <property name="maximumSize">
+              <size>
+               <width>100</width>
+               <height>20</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>EQP</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QListWidget" name="list_e_eqp">
              <property name="maximumSize">
               <size>
                <width>100</width>
@@ -223,7 +208,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QListWidget" name="list_EQP_drive">
+            <widget class="QListWidget" name="list_e_drive">
              <property name="maximumSize">
               <size>
                <width>100</width>
@@ -253,12 +238,61 @@
             </widget>
            </item>
            <item>
-            <widget class="QListWidget" name="list_EQP_exe">
+            <widget class="QListWidget" name="list_e_ext">
              <property name="maximumSize">
               <size>
                <width>100</width>
                <height>80</height>
               </size>
+             </property>
+             <property name="selectionMode">
+              <enum>QAbstractItemView::ExtendedSelection</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_13">
+           <property name="sizeConstraint">
+            <enum>QLayout::SetDefaultConstraint</enum>
+           </property>
+           <item>
+            <widget class="QPushButton" name="push_eqp_info">
+             <property name="maximumSize">
+              <size>
+               <width>100</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>EQP 등록</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="push_ext_info">
+             <property name="maximumSize">
+              <size>
+               <width>100</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>확장자 등록</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="push_manual">
+             <property name="maximumSize">
+              <size>
+               <width>100</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>사용법</string>
              </property>
             </widget>
            </item>
@@ -266,20 +300,83 @@
          </item>
         </layout>
        </item>
-       <item row="1" column="0" colspan="3">
-        <layout class="QVBoxLayout" name="verticalLayout_4">
-         <property name="spacing">
-          <number>0</number>
-         </property>
+       <item row="3" column="0">
+        <layout class="QHBoxLayout" name="horizontalLayout_4">
          <item>
-          <widget class="QLabel" name="label_10">
-           <property name="text">
-            <string>현재 경로</string>
-           </property>
-          </widget>
+          <layout class="QVBoxLayout" name="verticalLayout_7">
+           <item>
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>Path3</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QListWidget" name="list_e_path3">
+             <property name="selectionMode">
+              <enum>QAbstractItemView::ExtendedSelection</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
-          <widget class="QLineEdit" name="line_EQP_cur_path"/>
+          <layout class="QVBoxLayout" name="verticalLayout_8">
+           <item>
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>Path4</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QListWidget" name="list_e_path4">
+             <property name="selectionMode">
+              <enum>QAbstractItemView::ExtendedSelection</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </item>
+       <item row="2" column="0">
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_5">
+           <item>
+            <widget class="QLabel" name="label_5">
+             <property name="text">
+              <string>Path1</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QListWidget" name="list_e_path1">
+             <property name="selectionMode">
+              <enum>QAbstractItemView::ExtendedSelection</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_6">
+           <item>
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>Path2</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QListWidget" name="list_e_path2">
+             <property name="selectionMode">
+              <enum>QAbstractItemView::ExtendedSelection</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
        </item>
@@ -295,14 +392,14 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_5">
            <item>
-            <widget class="QPushButton" name="push_EQP_back">
+            <widget class="QPushButton" name="push_e_back">
              <property name="text">
               <string>Back</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="push_EQP_foward">
+            <widget class="QPushButton" name="push_e_foward">
              <property name="text">
               <string>Forward</string>
              </property>
@@ -311,7 +408,11 @@
           </layout>
          </item>
          <item>
-          <widget class="QListWidget" name="list_EQP_path5"/>
+          <widget class="QListWidget" name="list_e_path5">
+           <property name="selectionMode">
+            <enum>QAbstractItemView::ExtendedSelection</enum>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>
@@ -319,8 +420,6 @@
      </widget>
     </item>
    </layout>
-   <zorder>groupBox_2</zorder>
-   <zorder>groupBox</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -328,7 +427,7 @@
      <x>0</x>
      <y>0</y>
      <width>1252</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
   </widget>
