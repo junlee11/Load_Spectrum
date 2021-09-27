@@ -1,0 +1,6 @@
+ext
+all
+png
+xlsx
+xlsm
+pptx

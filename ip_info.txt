@@ -1,0 +1,5 @@
+Line,EQP,IP
+S5,MSTKF11,192.168.10.103
+S5,MSTKF12,test_mstkf12
+S3,MSTKA11,test_mstka11
+S1,MSTK11,test_mstk11
