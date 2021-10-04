@@ -4,4 +4,3 @@ png
 xlsx
 xlsm
 pptx
-txt

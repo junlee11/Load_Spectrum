@@ -1,6 +1,7 @@
 #210922 Project 시작
 
-import sys, os, re
+import sys, os, re, time
+from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -9,16 +10,22 @@ import pandas as pd
 import ftplib
 import tkinter
 from tkinter import ttk
+from tkinter import messagebox
 import shutil
 import keyboard
-from PyQt5 import QtCore, QtGui, QtWidgets
+import pyautogui
+from dateutil import parser
+from time import sleep
+
 
 #hot key 알아내기
 # while True:
 #     print(keyboard.read_key())
 
 c_flag = {'c_is_inf' : 0, 'c_access' : 0, 'back' : 0}
-e_flag = {'e_is_path' : 0, 'e_path5' : 0, 'back' : 0, 'e_find' : 0}
+e_flag = {'e_is_path' : 0, 'e_path5' : 0, 'back' : 0, 'e_find' : 0, 'overwrite' : {}, 'folder_overwrite' : 0,
+          'ask_cnt' : 0, 'all_overwrite' : 0, 'ext' : {}, 'overwrite_u' : {}, 'folder_overwrite_u' : {}}
+ftp_dic = {'e_line' : '', 'c_line' : '', 'item_list' : [], 'ext_list' : [], 'item_list_up' : []}
 
 form_class = uic.loadUiType("Load_Main_EQP_Local.ui")[0]
 #form_class = uic.loadUiType("Load_Main_Local_EQP.ui")[0]
@@ -28,9 +35,11 @@ class WindowClass(QMainWindow):
 
     def __init__(self) :
         super().__init__()
-        self.setupUi(self)
         global c_flag
         global e_flag
+        global ftp
+        global ftp_dic
+        self.setupUi(self)
         self.c_fow_list = []
         self.e_fow_list = []
         self.list_e_ip1 = ''
@@ -39,6 +48,7 @@ class WindowClass(QMainWindow):
         self.list_e_ip4 = ''
         self.list_e_ip5 = ''
         self.e_path5_str = ''
+        ftp = None
 
         #Local
         self.list_c_drive.addItem('C:')
@@ -106,13 +116,32 @@ class WindowClass(QMainWindow):
         self.push_e_new.clicked.connect(self.e_push_new_clk)
         self.push_e_del.clicked.connect(self.e_push_del_clk)
 
-        self.setAcceptDrops(True)
+        ########FTP 다운 관련
+        self.line_e_cur_path.textChanged.connect(self.e_address)
+        self.line_c_cur_path.textChanged.connect(self.c_address)
+        self.list_e_ext.itemSelectionChanged.connect(self.mk_ext_list)
+        #self.list_e_ext.currentItemChanged.connect(self.mk_ext_list)
 
         ########보조 push button
         self.push_eqp_info.clicked.connect(self.e_push_open_eqp)
         self.push_ext_info.clicked.connect(self.e_push_open_ext)
         self.push_manual.clicked.connect(self.e_push_open_manual)
         self.push_hotkey.clicked.connect(self.e_push_open_hotkey)
+############################################################
+##########################ftp 다운 보조 함수##################
+    def e_address(self):
+        global ftp_dic
+        ftp_dic['e_line'] = self.line_e_cur_path.text()
+
+    def c_address(self):
+        global ftp_dic
+        ftp_dic['c_line'] = self.line_c_cur_path.text()
+
+    def mk_ext_list(self):
+        global ftp_dic
+        ftp_dic['ext_list'] = [item.text() for item in self.list_e_ext.selectedItems()]
+############################################################
+############################################################
 
     #EQP 파일 열기
     def e_push_open_eqp(self):
@@ -158,9 +187,11 @@ class WindowClass(QMainWindow):
         self.list_e_drive.clear()
         self.list_e_drive.addItem('D:')
         self.list_e_drive.addItem('E:')
+        self.list_e_drive.addItem('C:')
 
     #본격적으로 eqp path 만들기
     def e_mk_path1(self):
+        global ftp
         e_flag['e_find'] = 0
         ftp_id = ''
         ftp_pw = ''
@@ -178,16 +209,19 @@ class WindowClass(QMainWindow):
         if self.ftp_drive[0] == 'E':
             ftp_id = 'LS_E'
             ftp_pw = 'LS_E'
+        if self.ftp_drive[0] == 'C':
+            ftp_id = 'LS_C'
+            ftp_pw = 'LS_C'
 
-        self.ftp = ftplib.FTP()
+        ftp = ftplib.FTP()
         try:
-            self.ftp.connect(self.ftp_ip, 21)
+            ftp.connect(self.ftp_ip, 21)
         except:
             QMessageBox.warning(self, 'IP Interlock', '접속할 수 없습니다. / IP 주소 및 접속 상태 확인')
             return
 
         try:
-            self.ftp.login(ftp_id, ftp_pw)
+            ftp.login(ftp_id, ftp_pw)
         except ftplib.error_perm:
             QMessageBox.warning(self, 'FTP Login Interlock', 'FTP 계정정보가 올바르지 않습니다')
             return
@@ -196,11 +230,10 @@ class WindowClass(QMainWindow):
         #self.ftp.cwd('/test/a/')
         #self.ftp.cwd('/test/')
 
-        self.line_e_cur_path.setText('ftp://' + self.ftp_ip + '/' + self.list_e_drive.currentItem().text()[:-1] + self.ftp.pwd())
+        self.line_e_cur_path.setText('ftp://' + self.ftp_ip + '/' + self.list_e_drive.currentItem().text()[:-1] + ftp.pwd())
         arr_e_path, arr_e_path_mlsd = self.e_arr(self.line_e_cur_path.text()[self.line_e_cur_path.text().rfind('/') : ])
         self.e_list_to_target(arr_e_path, arr_e_path_mlsd, 0)
         self.ftp_ip_idx = len(self.line_e_cur_path.text())
-
         self.e_path_ip[0] = self.line_e_cur_path.text()[self.ftp_ip_idx - 1:]
 
     def e_mk_path2(self):
@@ -220,6 +253,7 @@ class WindowClass(QMainWindow):
         self.e_mk_path_all(4)
 
     def e_mk_path_all(self, k):
+        global ftp
         e_flag['e_path5'] = 0
         for i in range(k, len(self.e_path_list)):
             self.e_path_list[i].clear()
@@ -239,19 +273,20 @@ class WindowClass(QMainWindow):
         self.e_list_to_target(arr_e_path, arr_e_path_mlsd, k)
 
     def e_arr(self, f_path):
+        global ftp
         e_flag['e_is_path'] = 0
         f_path_list = []
         f_exe_list = []
         #ftp 경로 지정
         try:
-            self.ftp.cwd(f_path)
+            ftp.cwd(f_path)
         except ftplib.error_perm:
             QMessageBox.warning(self, 'Path Interlock', '다음 경로를 보려면 폴더를 선택하세요.')
             e_flag['e_is_path'] = 1
             return
 
         try:
-            f_path_list_mlsd = [f for f in list(self.ftp.mlsd()) if not (f[0].startswith('.') or (f[0].startswith('$')))]
+            f_path_list_mlsd = [f for f in list(ftp.mlsd()) if not (f[0].startswith('.') or (f[0].startswith('$')))]
             for f in f_path_list_mlsd:
                 f_path_list.append(f[0])
                 if f[1]['type'] == 'dir' : f_exe_list.append('')
@@ -293,6 +328,7 @@ class WindowClass(QMainWindow):
 
 
     def e_list_to_target(self, f_path, f_path_mlsd, n):
+        global ftp
 
         for i in f_path:
 
@@ -310,15 +346,17 @@ class WindowClass(QMainWindow):
     
     #ftp폴더 내 파일의 타입 반환
     def ftp_isdir(self, s, f_mlsd):
+        global ftp
         for i in f_mlsd:
             if s == i[0] : return 'dir' == i[1]['type']
 
     #path5 더블클릭용 ftp에서 1개의 경로만 받아 폴더 유무 판단
     def ftp_isdir2(self,s):
+        global ftp
         t_flag = 0
         origin_ip = self.line_e_cur_path.text()[self.ftp_ip_idx-1:]
         #chg_ip = origin_ip + s
-        ftp_mlsd = list(self.ftp.mlsd())
+        ftp_mlsd = list(ftp.mlsd())
         for f in ftp_mlsd:
             #파일명과 확장자 모두 일치해야 함
             if s == f[0] and f[1]['type'] == 'dir' :
@@ -330,6 +368,8 @@ class WindowClass(QMainWindow):
 
     #path5 더블클릭 제어 self.e_path5_dbclk
     def e_path5_dbclk(self):
+        self.e_path5_str = ''
+        global ftp
         e_flag['e_path5'] += 1
         if e_flag['e_path5'] == 1 : self.e_path5_idx = len(self.line_e_cur_path.text())
         #파일 열기 불가, 폴더 경로만 제어
@@ -346,7 +386,8 @@ class WindowClass(QMainWindow):
             pass
 
     def e_push_back_clk(self):
-
+        global ftp
+        if e_flag['e_path5'] == 0 : self.e_path5_idx = len(self.line_e_cur_path.text())
         t = self.line_e_cur_path.text()
         if self.list_e_path5.item(0) == None and e_flag['e_path5'] == 0:       #path5 사용 안할때는 눌러도 동작안함
             pass
@@ -366,6 +407,7 @@ class WindowClass(QMainWindow):
             e_flag['back'] += 1
 
     def e_push_fow_clk(self):
+        global ftp
         if e_flag['back'] != 0:
             arr_e_path, arr_e_path_mlsd = self.e_arr(self.e_fow_list[e_flag['back']-1])
             self.e_path_list[4].clear()
@@ -375,6 +417,7 @@ class WindowClass(QMainWindow):
             self.e_fow_list.pop()
 
     def e_push_new_clk(self):
+        global ftp
         #현재 기본경로 선택했으면 tkinter 실행
         try:
             print(self.list_e_drive.currentItem().text())
@@ -387,7 +430,7 @@ class WindowClass(QMainWindow):
         
         #폴더 생성
         try:
-            self.ftp.mkd(f_path)
+            ftp.mkd(f_path)
             icon = QIcon('Icon_folder.png')
             icon_item = QListWidgetItem(icon, self.new_folder)
             self.e_path_list[e_flag['e_find']].addItem(icon_item)
@@ -397,64 +440,49 @@ class WindowClass(QMainWindow):
             return
 
     def e_push_del_clk(self):
-
+        global ftp
         if e_flag['e_find'] == 0 : return
+
         try:
             print(self.e_path_list[e_flag['e_find']].currentItem().text())
+
+            a = [i.text() for i in self.e_path_list[e_flag['e_find']].selectedItems()]
+            b = [i for i in self.e_path_list[e_flag['e_find']].selectedItems()]
         except AttributeError:
             QMessageBox.warning(self, 'Path Interlock', '삭제하려는 대상의 경로가 있는 리스트에서 선택하세요.')
             return
 
-        reply = QMessageBox.question(self, '삭제 경고', self.e_path_list[e_flag['e_find']].currentItem().text() + '\n정말로 선택한 파일(폴더)를 삭제 하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        for i in range(len(a)):
+            if i == 0 : str = a[i]
+            else : str = str + '\n' + a[i]
+
+        reply = QMessageBox.question(self, '삭제 경고', '정말로 선택한 파일(폴더)를 삭제 하시겠습니까?\n' + str, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
-            f_name = self.line_e_cur_path.text()[self.ftp_ip_idx - 1:] + self.e_path_list[e_flag['e_find']].currentItem().text()
-            self.remove_ftp_dir(f_name)
-            self.e_path_list[e_flag['e_find']].takeItem(self.e_path_list[e_flag['e_find']].currentRow())
+            for i in range(len(a)):
+                f_name = self.line_e_cur_path.text()[self.ftp_ip_idx - 1:] + a[i]
+                #f_name = self.line_e_cur_path.text()[self.ftp_ip_idx - 1:] + self.e_path_list[e_flag['e_find']].currentItem().text()
+                self.remove_ftp_dir(f_name)
+                self.e_path_list[e_flag['e_find']].takeItem(self.e_path_list[e_flag['e_find']].currentRow())
         else:
             pass
 
     #ftp 경로 내 파일, 폴더 삭제
     def remove_ftp_dir(self, c_path):
-        for (name, properties) in self.ftp.mlsd(path = c_path):
+        global ftp
+        for (name, properties) in ftp.mlsd(path = c_path):
             if name in ['.', '..']:
                 continue
             elif properties['type'] == 'file':
                 try:
                     print(f"{c_path}/{name}")
-                    self.ftp.delete(f"{c_path}/{name}")
+                    ftp.delete(f"{c_path}/{name}")
                 except ftplib.error_perm:
-                    self.ftp.delete(c_path)
+                    ftp.delete(c_path)
                     return
             elif properties['type'] == 'dir':
                 self.remove_ftp_dir(f"{c_path}/{name}")
-        self.ftp.rmd(c_path)
-
-###############################################################################
-##############################이하 FTP 다운######################################
-###############################################################################
-
-    # def dragEnterEvent(self, event):
-    #     print('enter')
-    #     if event.mimeData().hasUrls():
-    #         event.accept()
-    #     else:
-    #         event.ignore()
-    #
-    # def dropEvent(self, event):
-    #     print('drop')
-    #     if event.mimeData().hasUrls():
-    #         print('drop')
-    #         print(event.mimeData().urls())
-    #     else:
-    #         event.ignore()
-        # files = [u.toLocalFile() for u in event.mimeData().urls()]
-        # for f in files:
-        #     print(f)
-
-
-
-
+        ftp.rmd(c_path)
 
 
 ###############################################################################
@@ -512,8 +540,12 @@ class WindowClass(QMainWindow):
 
         #확장자 저장
         for i in path_list[:]:
-            name, ext = os.path.splitext(path + '/' + i)
-            exe_list.append(ext)
+            if os.path.isfile(path +'/' + i):
+                name, ext = os.path.splitext(path + '/' + i)
+                exe_list.append(ext)
+            else:
+                ext = ''
+                exe_list.append(ext)
 
         #확장자 중복 제거
         exe_set = set(exe_list)
@@ -526,8 +558,11 @@ class WindowClass(QMainWindow):
 
         #확장자별로 구분
         for i in path_list[:]:
-            name, ext = os.path.splitext(path + '/' + i)
-            arr_dic[ext].append(i)
+            if os.path.isfile(path + '/' + i):
+                name, ext = os.path.splitext(path + '/' + i)
+                arr_dic[ext].append(i)
+            else:
+                arr_dic[''].append(i)
 
         #확장자 각각을 정렬
         for i in exe_list:
@@ -655,16 +690,26 @@ class WindowClass(QMainWindow):
         if self.line_c_cur_path.text() == '' : return
 
         try:
-            print(self.list_c_path.currentItem().text())
+            a = [i.text() for i in self.list_c_path.selectedItems()]
+            b = [i for i in self.list_c_path.selectedItems()]
         except AttributeError:
             QMessageBox.warning(self, 'Path Interlock', '삭제하려는 대상의 경로가 있는 리스트에서 선택하세요.')
             return
 
-        reply = QMessageBox.question(self, '삭제 경고', self.list_c_path.currentItem().text() + '\n정말로 선택한 파일(폴더)를 삭제 하시겠습니까?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        for i in range(len(a)):
+            if i == 0 : str = a[i]
+            else : str = str + '\n' + a[i]
+
+        reply = QMessageBox.question(self, '삭제 경고', '정말로 선택한 파일(폴더)를 삭제 하시겠습니까?\n' + str , QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if reply == QMessageBox.Yes:
-            shutil.rmtree(self.line_c_cur_path.text() + '/' + self.list_c_path.currentItem().text())
-            self.list_c_path.takeItem(self.list_c_path.currentRow())
+            for i in range(len(a)):
+                try:
+                    shutil.rmtree(self.line_c_cur_path.text() + '/' + a[i])
+                    self.list_c_path.takeItem(self.list_c_path.currentRow())
+                except NotADirectoryError as e:
+                    os.remove(self.line_c_cur_path.text() + '/' + a[i])
+                    self.list_c_path.takeItem(self.list_c_path.currentRow())
         else:
             pass
 
@@ -787,17 +832,13 @@ class WindowClass(QMainWindow):
         self.verticalLayout_9.addLayout(self.horizontalLayout_5)
 
         #self.list_e_path5
-        self.list_e_path5 = QtWidgets.QListWidget(self.groupBox)
-        #self.list_e_path5.setDragDropMode(QtWidgets.QAbstractItemView.DragOnly)
+        self.list_e_path5 = Lst_e_path5(self.groupBox)
         self.list_e_path5.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.list_e_path5.setDragEnabled(True)
         self.list_e_path5.setDragDropOverwriteMode(False)
-        self.list_e_path5.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.list_e_path5.setDefaultDropAction(Qt.MoveAction)
-
         self.list_e_path5.setObjectName("list_e_path5")
         self.verticalLayout_9.addWidget(self.list_e_path5)
-        self.list_e_path5.addItem('test')
 
         self.gridLayout.addLayout(self.verticalLayout_9, 1, 3, 3, 1)
         self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
@@ -807,22 +848,32 @@ class WindowClass(QMainWindow):
         self.label_7 = QtWidgets.QLabel(self.groupBox)
         self.label_7.setObjectName("label_7")
         self.verticalLayout_7.addWidget(self.label_7)
-        self.list_e_path3 = QtWidgets.QListWidget(self.groupBox)
-        self.list_e_path3.setDragDropMode(QtWidgets.QAbstractItemView.DragDrop)
+
+        #list_e_path3
+        self.list_e_path3 = Lst_e_path3(self.groupBox)
         self.list_e_path3.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.list_e_path3.setDragEnabled(True)
+        self.list_e_path3.setDragDropOverwriteMode(False)
+        self.list_e_path3.setDefaultDropAction(Qt.MoveAction)
         self.list_e_path3.setObjectName("list_e_path3")
         self.verticalLayout_7.addWidget(self.list_e_path3)
+
         self.horizontalLayout_4.addLayout(self.verticalLayout_7)
         self.verticalLayout_8 = QtWidgets.QVBoxLayout()
         self.verticalLayout_8.setObjectName("verticalLayout_8")
         self.label_8 = QtWidgets.QLabel(self.groupBox)
         self.label_8.setObjectName("label_8")
         self.verticalLayout_8.addWidget(self.label_8)
-        self.list_e_path4 = QtWidgets.QListWidget(self.groupBox)
-        self.list_e_path4.setDragDropMode(QtWidgets.QAbstractItemView.DragDrop)
+
+        # list_e_path4
+        self.list_e_path4 = Lst_e_path4(self.groupBox)
         self.list_e_path4.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.list_e_path4.setDragEnabled(True)
+        self.list_e_path4.setDragDropOverwriteMode(False)
+        self.list_e_path4.setDefaultDropAction(Qt.MoveAction)
         self.list_e_path4.setObjectName("list_e_path4")
         self.verticalLayout_8.addWidget(self.list_e_path4)
+
         self.horizontalLayout_4.addLayout(self.verticalLayout_8)
         self.gridLayout.addLayout(self.horizontalLayout_4, 3, 0, 1, 1)
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
@@ -832,22 +883,32 @@ class WindowClass(QMainWindow):
         self.label_5 = QtWidgets.QLabel(self.groupBox)
         self.label_5.setObjectName("label_5")
         self.verticalLayout_5.addWidget(self.label_5)
-        self.list_e_path1 = QtWidgets.QListWidget(self.groupBox)
-        self.list_e_path1.setDragDropMode(QtWidgets.QAbstractItemView.DragDrop)
+
+        #list_e_path1
+        self.list_e_path1 = Lst_e_path1(self.groupBox)
         self.list_e_path1.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.list_e_path1.setDragEnabled(True)
+        self.list_e_path1.setDragDropOverwriteMode(False)
+        self.list_e_path1.setDefaultDropAction(Qt.MoveAction)
         self.list_e_path1.setObjectName("list_e_path1")
         self.verticalLayout_5.addWidget(self.list_e_path1)
+
         self.horizontalLayout_3.addLayout(self.verticalLayout_5)
         self.verticalLayout_6 = QtWidgets.QVBoxLayout()
         self.verticalLayout_6.setObjectName("verticalLayout_6")
         self.label_6 = QtWidgets.QLabel(self.groupBox)
         self.label_6.setObjectName("label_6")
         self.verticalLayout_6.addWidget(self.label_6)
-        self.list_e_path2 = QtWidgets.QListWidget(self.groupBox)
-        self.list_e_path2.setDragDropMode(QtWidgets.QAbstractItemView.DragDrop)
+
+        #list_e_path2
+        self.list_e_path2 = Lst_e_path2(self.groupBox)
         self.list_e_path2.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.list_e_path2.setDragEnabled(True)
+        self.list_e_path2.setDragDropOverwriteMode(False)
+        self.list_e_path2.setDefaultDropAction(Qt.MoveAction)
         self.list_e_path2.setObjectName("list_e_path2")
         self.verticalLayout_6.addWidget(self.list_e_path2)
+
         self.horizontalLayout_3.addLayout(self.verticalLayout_6)
         self.gridLayout.addLayout(self.horizontalLayout_3, 2, 0, 1, 1)
         self.verticalLayout_14 = QtWidgets.QVBoxLayout()
@@ -880,8 +941,12 @@ class WindowClass(QMainWindow):
         #self.list_c_path = QtWidgets.QListWidget(self.groupBox_2)
         #self.list_c_path.setDragDropMode(QtWidgets.QAbstractItemView.DragOnly)
         self.list_c_path.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.list_c_path.setDragEnabled(True)
+        self.list_c_path.setDragDropOverwriteMode(False)
+        self.list_c_path.setDefaultDropAction(Qt.MoveAction)
         self.list_c_path.setObjectName("list_c_path")
         self.gridLayout_2.addWidget(self.list_c_path, 3, 0, 1, 2)
+
 
         self.verticalLayout_10 = QtWidgets.QVBoxLayout()
         self.verticalLayout_10.setObjectName("verticalLayout_10")
@@ -975,27 +1040,466 @@ class WindowClass(QMainWindow):
 ####################################################################################
 ##############################Form Code End#########################################
 
+#ftp upload
+class Lst_e_path1(QListWidget):
+    def __init__(self, parent=None):
+        super(Lst_e_path1, self).__init__(parent)
+        self.setAcceptDrops(True)
+        global ftp
+
+    def dropEvent(self, QDropEvent):
+        global ftp
+        global ftp_dic
+
+        source_Widget = QDropEvent.source()
+        print(source_Widget.objectName())
+        if 'list_e_path' in source_Widget.objectName() : return
+        ########################################################위 공통
+
+class Lst_e_path2(QListWidget):
+    def __init__(self, parent=None):
+        super(Lst_e_path2, self).__init__(parent)
+        self.setAcceptDrops(True)
+        global ftp
+
+    def dropEvent(self, QDropEvent):
+        global ftp
+        global ftp_dic
+        #211002 전체 lineedit 경로 중 path2에 해당하는 경로만 가져오기
+        source_Widget = QDropEvent.source()
+
+        e_flag['all_overwrite'] = 0
+        e_flag['ask_cnt'] = 0
+
+        if 'list_e_path' in source_Widget.objectName() : return
+        ########################################################위 공통
+        ftp_dic['item_list_up'] = [item.text() for item in source_Widget.selectedItems()]  # str
+        items = source_Widget.selectedItems()
+        if ftp_dic['e_line'][-1] == '/' : ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'], 2)         #몇번째 리스트까지의 경로를 가져올지에 대한 함수
+        else : ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'] + '/', 2)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
+        upload_to_eqp(ftp_dic)  # upload
+
+        for i in items:
+            if e_flag['overwrite_u'][i.text()] == 0:
+                icon_item = QListWidgetItem(i.icon(), i.text())
+                self.addItem(icon_item)
+
+class Lst_e_path3(QListWidget):
+    def __init__(self, parent=None):
+        super(Lst_e_path3, self).__init__(parent)
+        self.setAcceptDrops(True)
+        global ftp
+
+    def dropEvent(self, QDropEvent):
+        global ftp
+        global ftp_dic
+
+        source_Widget = QDropEvent.source()
+        #print(source_Widget.objectName())
+        if 'list_e_path' in source_Widget.objectName() : return
+        ########################################################위 공통
+
+class Lst_e_path4(QListWidget):
+    def __init__(self, parent=None):
+        super(Lst_e_path4, self).__init__(parent)
+        self.setAcceptDrops(True)
+        global ftp
+
+    def dropEvent(self, QDropEvent):
+        global ftp
+        global ftp_dic
+
+        source_Widget = QDropEvent.source()
+        print(source_Widget.objectName())
+        if 'list_e_path' in source_Widget.objectName() : return
+        ########################################################위 공통
+
+class Lst_e_path5(QListWidget):
+    def __init__(self, parent=None):
+        super(Lst_e_path5, self).__init__(parent)
+        self.setAcceptDrops(True)
+        global ftp
+
+    def dropEvent(self, QDropEvent):
+        global ftp
+        global ftp_dic
+
+        source_Widget = QDropEvent.source()
+        print(source_Widget.objectName())
+        if 'list_e_path' in source_Widget.objectName() : return
+        ########################################################위 공통
+
+#211002 여기부터
+def find_upload_index(f_path,n):
+    sum = 0
+    temp = 0
+    temp_path = f_path
+    for i in range(0, n + 3):
+        if i == 0: f_path = f_path[temp:]
+        else: f_path = f_path[temp+1:]
+        temp = f_path.find('/')
+        sum += (temp+1)
+    print(temp_path[:sum-1])
+    return temp_path[:sum-1]
+
+
+#ftp upload
+def upload_to_eqp(f_dic):       #전체 다운
+    global ftp
+    print(f_dic)
+    idx = f_dic['e_line'].find('/',7) + 2
+    #f_dic['e_line'] = f_dic['e_line'][idx:] #여기서 변함
+    ftp_path = f_dic['e_line'][idx:]
+    origin = ftp.pwd()
+
+    #ftp.cwd("받아올  파일 위치")
+    for filename in f_dic['item_list_up']:
+        try:
+            upload_local_Files(f_dic['c_line'] + '\\' + filename, ftp_path)
+            ftp.cwd(origin)
+        except PermissionError as e:
+            pyautogui.alert('다운받을 수 없는 경로입니다.', 'FTP Upload Interlock')
+
+def ftp_is_in(str):
+    global ftp
+
+    f_dic = dict(list(ftp.mlsd()))
+    try:
+        print(f_dic[str])
+        return True
+    except KeyError:
+        return False
+
+
+def upload_local_Files(local, ftp_path):      #1개 path 다운
+    global ftp
+    global ftp_dic
+    m_list = []
+    m_dic = {}
+    sleep(1)
+
+    if os.path.isdir(local):
+        #폴더 업로드
+        try:
+            t = local.replace('\\', '/')
+            p = ftp_path + t[t.rfind('/'):]
+            ftp.mkd(p)
+        except: #중복될때
+            #e_flag['folder_overwrite_u'] = 0
+            folder = t[t.rfind('/') + 1:]
+            if e_flag['ask_cnt'] < 4:
+                a = pyautogui.confirm(folder + '\n이미 존재하는 폴더입니다. 덮어 씌우겠습니까?', title='FTP Down Interlock', buttons=['Yes', 'No'])
+            else:
+                if e_flag['all_overwrite'] == 0:
+                    b = pyautogui.confirm('모든 폴더(파일)에 대해 덮어 씌우겠습니까?', title='FTP Down Interlock', buttons=['Yes', 'No'])
+                    if b == 'Yes':
+                        e_flag['all_overwrite'] = 2
+                    else:
+                        e_flag['all_overwrite'] = 3
+
+            e_flag['overwrite_u'][folder] = 1
+            e_flag['ask_cnt'] += 1
+
+    else:
+        #파일 업로드
+        a=''
+        t = local.replace('\\', '/')
+        #print(t[t.rfind('/') : ])
+        if ftp_is_in(t[t.rfind('/') +1 : ]):
+            if e_flag['ask_cnt'] < 4 : a = pyautogui.confirm(t[t.rfind('/') +1 : ] + '\n이미 존재하는 파일입니다. 덮어 씌우겠습니까?', title='FTP Down Interlock', buttons=['Yes', 'No'])
+            else:
+                if e_flag['all_overwrite'] == 0 :
+                    b = pyautogui.confirm('모든 폴더(파일)에 대해 덮어 씌우겠습니까?', title='FTP Down Interlock', buttons=['Yes', 'No'])
+                    if b == 'Yes' : e_flag['all_overwrite'] = 2
+                    else : e_flag['all_overwrite'] = 3
+            if a == 'Yes' or e_flag['all_overwrite'] == 2:
+                e_flag['overwrite_u'][t[t.rfind('/') +1 : ]] = 1
+                fd = open(local, 'rb')  # download local path
+                ftp.storbinary("STOR " + local[local.rfind('\\') + 1:], fd)
+                fd.close()
+                e_flag['ask_cnt'] += 1
+                return
+            else:
+                e_flag['overwrite_u'][ftp_path[ftp_path.rfind('/') + 1:]] = 1
+                e_flag['ask_cnt'] += 1
+                return
+
+        else:
+            #print(local[local.rfind('/') + 1:])
+            fd = open(local, 'rb')
+            ftp.storbinary("STOR " + local[local.rfind('\\') + 1:], fd)
+            fd.close()
+            e_flag['ask_cnt'] += 1
+            return
+
+
+
+    #아래부터 폴더 내 파일 있는 경우
+    file_list = os.listdir(local)
+    if file_list == [] : return     #없으면 종료
+
+    #폴더 내 파일이 있다면 : 재귀
+    for file in file_list:
+        t = local.replace('\\', '/')
+        #print(t[t.rfind('/'):])
+        #print(ftp_path + t[t.rfind('/'):] + '/' + file)
+        #print(local+ '\\' + file)
+
+        if os.path.isdir(local + '\\' + file):     #폴더일때
+            #ftp.mkd(ftp_path + '/' + file)
+            ftp.cwd(ftp_path + t[t.rfind('/'):])
+            upload_local_Files(local + '\\' + file, ftp_path + t[t.rfind('/'):])
+
+        else :                       #파일일때
+            ftp.cwd(ftp_path + t[t.rfind('/'):])
+            if ftp_is_in(file):
+                if e_flag['ask_cnt'] < 4:
+                    a = pyautogui.confirm(file + '\n이미 존재하는 파일입니다. 덮어 씌우겠습니까?', title='FTP Down Interlock', buttons=['Yes', 'No'])
+                else:
+                    if e_flag['all_overwrite'] == 0:
+                        b = pyautogui.confirm('모든 폴더(파일)에 대해 덮어 씌우겠습니까?', title='FTP Down Interlock', buttons=['Yes', 'No'])
+                        if b == 'Yes':
+                            e_flag['all_overwrite'] = 2
+                        else:
+                            e_flag['all_overwrite'] = 3
+                if a == 'Yes' or e_flag['all_overwrite'] == 2:
+                    e_flag['overwrite_u'][file] = 1
+                    fd = open(local + '\\' + file, 'rb')  # download local path
+                    ftp.storbinary("STOR " + file, fd)
+                    fd.close()
+                    e_flag['ask_cnt'] += 1
+                    return
+                else:
+                    e_flag['overwrite'][ftp_path[ftp_path.rfind('/') + 1:]] = 1
+                    e_flag['ask_cnt'] += 1
+                    return
+
+            else:
+                fd = open(local + '\\' + file, 'rb')  # download local path
+                ftp.storbinary("STOR " + file, fd)
+                fd.close()
+                e_flag['ask_cnt'] += 1
+                return
+
+
+###########################################################################################
+#ftp download
 class Lst_c_path(QListWidget):
     def __init__(self, parent=None):
         super(Lst_c_path, self).__init__(parent)
         self.setAcceptDrops(True)
+        global ftp
 
     def dropEvent(self, QDropEvent):
-        #FTP 세팅에 필요한 변수
-        #1. FTP 객체
-        #2. FTP 경로 (Source) = line_e_cur_path
-        #3. Local 경로 (Target) = line_c_cur_path
-        #4. 선택한 개수
-        
+        global ftp
+        global ftp_dic
+        e_flag['all_overwrite'] = 0
+        e_flag['ask_cnt'] = 0
         source_Widget = QDropEvent.source()
+        if 'list_c_path' in source_Widget.objectName(): return
+        ftp_dic['item_list'] = [item.text() for item in source_Widget.selectedItems()]      #str
         items = source_Widget.selectedItems()
-        print(items)
-        for i in items:
-            source_Widget.takeItem(source_Widget.indexFromItem(i).row())
-            self.addItem(i)
-        print('drop event')
-        print(source_Widget.objectName())
 
+        download_to_local(ftp_dic)      #download
+
+        for i in items:
+            #source_Widget.takeItem(source_Widget.indexFromItem(i).row())
+            if e_flag['overwrite'][i.text()] == 0 and e_flag['ext'][i.text()] == 0:
+                icon_item = QListWidgetItem(i.icon(), i.text())
+                self.addItem(icon_item)
+
+        # print(source_Widget.objectName())
+
+
+def download_to_local(f_dic):       #전체 다운
+    global ftp
+    idx = f_dic['e_line'].find('/',7) + 2
+    #f_dic['e_line'] = f_dic['e_line'][idx:] #여기서 변함
+    ftp_path = f_dic['e_line'][idx:]
+
+    #ftp.cwd("받아올  파일 위치")
+    for filename in f_dic['item_list']:
+        try:
+            download_FTP_Files(ftp_path + filename, f_dic['c_line'])
+        except PermissionError as e:
+            pyautogui.alert('다운받을 수 없는 경로입니다.', 'FTP Down Interlock')
+
+def download_FTP_Files(path, destination):      #1개 path 다운
+    global ftp
+    global ftp_dic
+    ext_flag = 0
+    m_list = []
+    m_dic = {}
+    sleep(1)
+
+    a=''
+
+    e_flag['overwrite'][path[path.rfind('/') + 1:]] = 0
+    e_flag['ext'][path[path.rfind('/') + 1:]] = 0
+
+    try:            #폴더 다운
+        ftp.cwd(path)
+        mkdir_p(destination.replace('\\','/') + path[path.rfind('/'):])
+        if e_flag['folder_overwrite'] == 1 : return
+
+    except ftplib.error_perm:       #파일 다운로드
+        ftp.cwd(path[:path.rfind('/')])
+        timestamp = ''
+        f = path[path.rfind('/') + 1:]
+
+######################################ftp mlsd를 dic로 변환
+######################################timestamp, 확장자 확정
+        m_list = list(ftp.mlsd())
+        m_dic = dict(m_list)
+
+        timestamp = m_dic[f]['modify']
+        if ftp_dic['ext_list'] == []:
+            ext_flag = 1
+        else:
+            for i in ftp_dic['ext_list']:
+                if i == all : ext_flag = 1
+                if i in f : ext_flag = 1
+
+        if ext_flag == 0 :
+            e_flag['ext'][f] = 1
+            return
+
+        mtime = parser.parse(timestamp)
+        #파일 존재하면 인터락
+        if os.path.isfile(destination + '\\' + path[path.rfind('/') + 1 :]):
+            if e_flag['ask_cnt'] < 4 : a = pyautogui.confirm(path[path.rfind('/') + 1 :] + '\n이미 존재하는 파일입니다. 덮어 씌우겠습니까?', title='FTP Down Interlock', buttons=['Yes', 'No'])
+            else:
+                if e_flag['all_overwrite'] == 0 :
+                    b = pyautogui.confirm('모든 폴더(파일)에 대해 덮어 씌우겠습니까?', title='FTP Down Interlock', buttons=['Yes', 'No'])
+                    if b == 'Yes' : e_flag['all_overwrite'] = 2
+                    else : e_flag['all_overwrite'] = 3
+            if a == 'Yes' or e_flag['all_overwrite'] == 2:
+                e_flag['overwrite'][path[path.rfind('/') + 1:]] = 1
+                fd = open(destination + '\\' + path[path.rfind('/') + 1:], 'wb')  # download local path
+                ftp.retrbinary("RETR " + path[path.rfind('/') + 1:], fd.write)
+                fd.close()
+                os.utime(destination + '\\' + path[path.rfind('/') + 1:], (mtime.timestamp(), mtime.timestamp()))
+                e_flag['ask_cnt'] += 1
+                return
+            else:
+                e_flag['overwrite'][path[path.rfind('/') + 1 :]] = 1
+                e_flag['ask_cnt'] += 1
+                return
+        else:
+
+            fd = open(destination + '\\' + path[path.rfind('/') + 1 :], 'wb')                #download local path
+            ftp.retrbinary("RETR " + path[path.rfind('/') + 1 :], fd.write)
+            fd.close()
+            os.utime(destination + '\\' + path[path.rfind('/') + 1 :], (mtime.timestamp(), mtime.timestamp()))
+            return
+
+    filelist = ftp.nlst()
+
+    if filelist == [] : return      #path가 폴더이고 폴더 내 파일이나 폴더 1개 이상 있을 때
+
+    for file in filelist:
+        ext_flag = 0
+        e_flag['overwrite'][file] = 0
+        time.sleep(0.05)
+        try:        #폴더
+            ftp.cwd(path + '/' + file)
+            download_FTP_Files(path + '/' + file, destination + '/' + path[path.rfind('/') + 1 :])
+        except ftplib.error_perm:       #파일
+            f_name = destination + '\\' + path[path.rfind('/') + 1:] + '\\' + file
+            timestamp = ''
+
+            ######################################ftp mlsd를 dic로 변환
+            ######################################timestamp, 확장자 확정
+            m_list = list(ftp.mlsd())
+            m_dic = dict(m_list)
+
+            timestamp = m_dic[file]['modify']
+            if ftp_dic['ext_list'] == []:
+                ext_flag = 1
+            else:
+                for i in ftp_dic['ext_list']:
+                    if i == all: ext_flag = 1
+                    if i in file: ext_flag = 1
+
+            if ext_flag == 0:
+                e_flag['ext'][file] = 1
+                continue
+#
+
+            mtime = parser.parse(timestamp)
+            if os.path.isfile(f_name):
+                if e_flag['ask_cnt'] < 4 : a = pyautogui.confirm(file + '\n이미 존재하는 파일입니다. 덮어 씌우겠습니까?', title='FTP Down Interlock', buttons=['Yes', 'No'])
+                else:
+                    if e_flag['all_overwrite'] == 0 :
+                        b = pyautogui.confirm('모든 폴더(파일)에 대해 덮어 씌우겠습니까?', title='FTP Down Interlock', buttons=['Yes', 'No'])
+                        if b == 'Yes' : e_flag['all_overwrite'] = 2
+                        else : e_flag['all_overwrite'] = 3
+
+                if a == 'Yes' or e_flag['all_overwrite'] == 2:
+                    e_flag['overwrite'][file] = 1
+                    fd = open(f_name, 'wb')  # download local path
+                    ftp.retrbinary("RETR " + file, fd.write)
+                    fd.close()
+                    os.utime(f_name, (mtime.timestamp(), mtime.timestamp()))
+                    e_flag['ask_cnt'] += 1
+
+                else:
+                    e_flag['overwrite'][file] = 1
+                    e_flag['ask_cnt'] += 1
+            else:
+                fd = open(f_name, 'wb')  # download local path
+                ftp.retrbinary("RETR " + file, fd.write)
+                fd.close()
+                os.utime(f_name, (mtime.timestamp(), mtime.timestamp()))
+
+def mkdir_p(path):
+    global ftp
+    a = ''
+    try:
+        os.makedirs(path)
+    except OSError as exc:
+        e_flag['folder_overwrite'] = 0
+        folder = path[path.rfind('/') + 1:]
+        if e_flag['ask_cnt'] < 4 : a = pyautogui.confirm(folder + '\n이미 존재하는 폴더입니다. 덮어 씌우겠습니까?', title='FTP Down Interlock', buttons=['Yes', 'No'])
+        else :
+            if e_flag['all_overwrite'] == 0 :
+                b = pyautogui.confirm('모든 폴더(파일)에 대해 덮어 씌우겠습니까?', title='FTP Down Interlock', buttons=['Yes', 'No'])
+                if b == 'Yes' : e_flag['all_overwrite'] = 2
+                else : e_flag['all_overwrite'] = 3
+        if a == 'Yes' or e_flag['all_overwrite'] == 2:
+            e_flag['overwrite'][folder] = 1
+            e_flag['folder_overwrite'] = 0
+            e_flag['ask_cnt'] += 1
+            return
+
+        else:
+            e_flag['overwrite'][folder] = 1
+            e_flag['folder_overwrite'] = 1
+            e_flag['ask_cnt'] += 1
+            return
+
+
+
+
+#############################################################################
+#################################pgb#########################################
+
+class Thread_pgb(QThread):
+    def __init__(self, parent):
+        self.parent = parent
+
+    def run(self):
+        dlg = Load_pgb_dialog()
+        dlg.exe_()
+
+
+form_class_pgb = uic.loadUiType("Load_pgb.ui")[0]
+class Load_pgb_dialog(QDialog, form_class_pgb):
+    def __init__(self):
+        super().__init__()  # 기반 클래스의 생성자 실행 : QMainWindow의 생성자 호출
+        self.setupUi(self)
+
+##############################################################################
 
 if __name__ == "__main__" :
     app = QApplication(sys.argv)

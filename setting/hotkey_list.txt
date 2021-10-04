@@ -1,0 +1,6 @@
+단축키, 	설명(변경하지 말고 참고만 하세요)
+backspace,	Local 경로 뒤로 가기
+delete,		Local 폴더(파일) 삭제
+n,		Local 새폴더 생성
+ctrl+n		EQP 새폴더 생성
+ctrl+d		EQP 폴더(파일) 삭제
