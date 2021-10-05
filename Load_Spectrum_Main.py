@@ -9,6 +9,7 @@ from PyQt5 import uic
 import pandas as pd
 import ftplib
 import tkinter
+import tkinter.messagebox
 from tkinter import ttk
 from tkinter import messagebox
 import shutil
@@ -26,6 +27,7 @@ c_flag = {'c_is_inf' : 0, 'c_access' : 0, 'back' : 0}
 e_flag = {'e_is_path' : 0, 'e_path5' : 0, 'back' : 0, 'e_find' : 0, 'overwrite' : {}, 'folder_overwrite' : 0,
           'ask_cnt' : 0, 'all_overwrite' : 0, 'ext' : {}, 'overwrite_u' : {}, 'folder_overwrite_u' : {}}
 ftp_dic = {'e_line' : '', 'c_line' : '', 'item_list' : [], 'ext_list' : [], 'item_list_up' : []}
+cancel_flag = 0
 
 form_class = uic.loadUiType("Load_Main_EQP_Local.ui")[0]
 #form_class = uic.loadUiType("Load_Main_Local_EQP.ui")[0]
@@ -1055,6 +1057,27 @@ class Lst_e_path1(QListWidget):
         print(source_Widget.objectName())
         if 'list_e_path' in source_Widget.objectName() : return
         ########################################################위 공통
+        ###############상태바
+        self.thread_pgb = Thread_pgb()
+        self.thread_pgb.start()
+        # thread_pgb.working = True
+
+        ftp_dic['item_list_up'] = [item.text() for item in source_Widget.selectedItems()]  # str
+        items = source_Widget.selectedItems()
+        if ftp_dic['e_line'][-1] == '/':
+            ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'], 1)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
+        else:
+            ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'] + '/', 1)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
+        upload_to_eqp(ftp_dic)  # upload
+
+        for i in items:
+            if e_flag['overwrite_u'][i.text()] == 0:
+                icon_item = QListWidgetItem(i.icon(), i.text())
+                self.addItem(icon_item)
+
+        #################상태바 다운로드 종료
+        self.thread_pgb.stop()
+        self.thread_pgb.wait()
 
 class Lst_e_path2(QListWidget):
     def __init__(self, parent=None):
@@ -1065,14 +1088,20 @@ class Lst_e_path2(QListWidget):
     def dropEvent(self, QDropEvent):
         global ftp
         global ftp_dic
-        #211002 전체 lineedit 경로 중 path2에 해당하는 경로만 가져오기
+
         source_Widget = QDropEvent.source()
 
         e_flag['all_overwrite'] = 0
         e_flag['ask_cnt'] = 0
 
         if 'list_e_path' in source_Widget.objectName() : return
+
         ########################################################위 공통
+        ###############상태바
+        self.thread_pgb = Thread_pgb()
+        self.thread_pgb.start()
+        # thread_pgb.working = True
+
         ftp_dic['item_list_up'] = [item.text() for item in source_Widget.selectedItems()]  # str
         items = source_Widget.selectedItems()
         if ftp_dic['e_line'][-1] == '/' : ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'], 2)         #몇번째 리스트까지의 경로를 가져올지에 대한 함수
@@ -1083,6 +1112,10 @@ class Lst_e_path2(QListWidget):
             if e_flag['overwrite_u'][i.text()] == 0:
                 icon_item = QListWidgetItem(i.icon(), i.text())
                 self.addItem(icon_item)
+
+        #################상태바 다운로드 종료
+        self.thread_pgb.stop()
+        self.thread_pgb.wait()
 
 class Lst_e_path3(QListWidget):
     def __init__(self, parent=None):
@@ -1098,6 +1131,27 @@ class Lst_e_path3(QListWidget):
         #print(source_Widget.objectName())
         if 'list_e_path' in source_Widget.objectName() : return
         ########################################################위 공통
+        ###############상태바
+        self.thread_pgb = Thread_pgb()
+        self.thread_pgb.start()
+        # thread_pgb.working = True
+
+        ftp_dic['item_list_up'] = [item.text() for item in source_Widget.selectedItems()]  # str
+        items = source_Widget.selectedItems()
+        if ftp_dic['e_line'][-1] == '/':
+            ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'], 3)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
+        else:
+            ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'] + '/', 3)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
+        upload_to_eqp(ftp_dic)  # upload
+
+        for i in items:
+            if e_flag['overwrite_u'][i.text()] == 0:
+                icon_item = QListWidgetItem(i.icon(), i.text())
+                self.addItem(icon_item)
+
+        #################상태바 다운로드 종료
+        self.thread_pgb.stop()
+        self.thread_pgb.wait()
 
 class Lst_e_path4(QListWidget):
     def __init__(self, parent=None):
@@ -1113,6 +1167,27 @@ class Lst_e_path4(QListWidget):
         print(source_Widget.objectName())
         if 'list_e_path' in source_Widget.objectName() : return
         ########################################################위 공통
+        ###############상태바
+        self.thread_pgb = Thread_pgb()
+        self.thread_pgb.start()
+        # thread_pgb.working = True
+
+        ftp_dic['item_list_up'] = [item.text() for item in source_Widget.selectedItems()]  # str
+        items = source_Widget.selectedItems()
+        if ftp_dic['e_line'][-1] == '/':
+            ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'], 4)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
+        else:
+            ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'] + '/', 4)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
+        upload_to_eqp(ftp_dic)  # upload
+
+        for i in items:
+            if e_flag['overwrite_u'][i.text()] == 0:
+                icon_item = QListWidgetItem(i.icon(), i.text())
+                self.addItem(icon_item)
+
+        #################상태바 다운로드 종료
+        self.thread_pgb.stop()
+        self.thread_pgb.wait()
 
 class Lst_e_path5(QListWidget):
     def __init__(self, parent=None):
@@ -1128,6 +1203,27 @@ class Lst_e_path5(QListWidget):
         print(source_Widget.objectName())
         if 'list_e_path' in source_Widget.objectName() : return
         ########################################################위 공통
+        ###############상태바
+        self.thread_pgb = Thread_pgb()
+        self.thread_pgb.start()
+        # thread_pgb.working = True
+
+        ftp_dic['item_list_up'] = [item.text() for item in source_Widget.selectedItems()]  # str
+        items = source_Widget.selectedItems()
+        if ftp_dic['e_line'][-1] == '/':
+            ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'], 5)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
+        else:
+            ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'] + '/', 5)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
+        upload_to_eqp(ftp_dic)  # upload
+
+        for i in items:
+            if e_flag['overwrite_u'][i.text()] == 0:
+                icon_item = QListWidgetItem(i.icon(), i.text())
+                self.addItem(icon_item)
+
+        #################상태바 다운로드 종료
+        self.thread_pgb.stop()
+        self.thread_pgb.wait()
 
 #211002 여기부터
 def find_upload_index(f_path,n):
@@ -1139,7 +1235,7 @@ def find_upload_index(f_path,n):
         else: f_path = f_path[temp+1:]
         temp = f_path.find('/')
         sum += (temp+1)
-    print(temp_path[:sum-1])
+    #print(temp_path[:sum-1])
     return temp_path[:sum-1]
 
 
@@ -1172,6 +1268,7 @@ def ftp_is_in(str):
 
 
 def upload_local_Files(local, ftp_path):      #1개 path 다운
+    if cancel_flag == 1 : return
     global ftp
     global ftp_dic
     m_list = []
@@ -1205,6 +1302,7 @@ def upload_local_Files(local, ftp_path):      #1개 path 다운
         a=''
         t = local.replace('\\', '/')
         #print(t[t.rfind('/') : ])
+        print(t[t.rfind('/') + 1:])
         if ftp_is_in(t[t.rfind('/') +1 : ]):
             if e_flag['ask_cnt'] < 4 : a = pyautogui.confirm(t[t.rfind('/') +1 : ] + '\n이미 존재하는 파일입니다. 덮어 씌우겠습니까?', title='FTP Down Interlock', buttons=['Yes', 'No'])
             else:
@@ -1214,13 +1312,16 @@ def upload_local_Files(local, ftp_path):      #1개 path 다운
                     else : e_flag['all_overwrite'] = 3
             if a == 'Yes' or e_flag['all_overwrite'] == 2:
                 e_flag['overwrite_u'][t[t.rfind('/') +1 : ]] = 1
+
                 fd = open(local, 'rb')  # download local path
-                ftp.storbinary("STOR " + local[local.rfind('\\') + 1:], fd)
+                ftp.storbinary("STOR " + t[t.rfind('/') +1 : ], fd)
                 fd.close()
+                e_flag['overwrite_u'][t[t.rfind('/') + 1:]] = 1
                 e_flag['ask_cnt'] += 1
+
                 return
             else:
-                e_flag['overwrite_u'][ftp_path[ftp_path.rfind('/') + 1:]] = 1
+                e_flag['overwrite_u'][t[t.rfind('/') +1 : ]] = 1
                 e_flag['ask_cnt'] += 1
                 return
 
@@ -1229,6 +1330,7 @@ def upload_local_Files(local, ftp_path):      #1개 path 다운
             fd = open(local, 'rb')
             ftp.storbinary("STOR " + local[local.rfind('\\') + 1:], fd)
             fd.close()
+            e_flag['overwrite_u'][t[t.rfind('/') + 1:]] = 0
             e_flag['ask_cnt'] += 1
             return
 
@@ -1297,6 +1399,11 @@ class Lst_c_path(QListWidget):
         e_flag['ask_cnt'] = 0
         source_Widget = QDropEvent.source()
         if 'list_c_path' in source_Widget.objectName(): return
+
+        ############상태바
+        self.thread_pgb = Thread_pgb()
+        self.thread_pgb.start()
+
         ftp_dic['item_list'] = [item.text() for item in source_Widget.selectedItems()]      #str
         items = source_Widget.selectedItems()
 
@@ -1309,6 +1416,10 @@ class Lst_c_path(QListWidget):
                 self.addItem(icon_item)
 
         # print(source_Widget.objectName())
+        #################상태바 다운로드 종료
+        self.thread_pgb.stop()
+        self.thread_pgb.wait()
+
 
 
 def download_to_local(f_dic):       #전체 다운
@@ -1325,6 +1436,7 @@ def download_to_local(f_dic):       #전체 다운
             pyautogui.alert('다운받을 수 없는 경로입니다.', 'FTP Down Interlock')
 
 def download_FTP_Files(path, destination):      #1개 path 다운
+    if cancel_flag == 1: return
     global ftp
     global ftp_dic
     ext_flag = 0
@@ -1478,26 +1590,69 @@ def mkdir_p(path):
             e_flag['ask_cnt'] += 1
             return
 
-
-
-
 #############################################################################
 #################################pgb#########################################
 
 class Thread_pgb(QThread):
-    def __init__(self, parent):
-        self.parent = parent
+    #def __init__(self):
 
     def run(self):
-        dlg = Load_pgb_dialog()
-        dlg.exe_()
+        global cancel_flag
+        cancel_flag = 0
+        m = pyautogui.alert('파일을 업로드(다운로드) 중입니다. ','업로드(다운로드) 중입니다.', button='취소하기')
+        if m == 'Cancel' : cancel_flag = 1
+
+        #w = AnotherWindow2()
+        # w = Load_pgb_dialog()
+        # w.exec_()
+        # print('good')
+        # sleep(1)
+
+    def stop(self):
+        self.terminate()
 
 
-form_class_pgb = uic.loadUiType("Load_pgb.ui")[0]
-class Load_pgb_dialog(QDialog, form_class_pgb):
-    def __init__(self):
-        super().__init__()  # 기반 클래스의 생성자 실행 : QMainWindow의 생성자 호출
-        self.setupUi(self)
+#다운로드 / 업로드 진척을 QProgressBar로 표현하기 : 현재 실력부족으로 추후 진행
+# form_class_pgb = uic.loadUiType("Load_pgb.ui")[0]
+# class Load_pgb_dialog(QDialog, form_class_pgb):
+#     def __init__(self):
+#         super().__init__()  # 기반 클래스의 생성자 실행 : QMainWindow의 생성자 호출
+#         self.setupUi(self)
+#
+#     ###PGB Ui
+#     def setupUi(self, Dialog):
+#         Dialog.setObjectName("Dialog")
+#         Dialog.resize(254, 118)
+#         self.verticalLayout_2 = QtWidgets.QVBoxLayout(Dialog)
+#         self.verticalLayout_2.setObjectName("verticalLayout_2")
+#         self.verticalLayout = QtWidgets.QVBoxLayout()
+#         self.verticalLayout.setObjectName("verticalLayout")
+#         self.label = QtWidgets.QLabel(Dialog)
+#         self.label.setObjectName("label")
+#         self.verticalLayout.addWidget(self.label)
+#         self.label_2 = QtWidgets.QLabel(Dialog)
+#         self.label_2.setObjectName("label_2")
+#         self.verticalLayout.addWidget(self.label_2)
+#         self.line = QtWidgets.QFrame(Dialog)
+#         self.line.setFrameShape(QtWidgets.QFrame.HLine)
+#         self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
+#         self.line.setObjectName("line")
+#         self.verticalLayout.addWidget(self.line)
+#         self.pgb = QtWidgets.QProgressBar(Dialog)
+#         self.pgb.setProperty("value", 24)
+#         self.pgb.setObjectName("pgb")
+#         self.verticalLayout.addWidget(self.pgb)
+#         self.verticalLayout_2.addLayout(self.verticalLayout)
+#
+#         self.retranslateUi(Dialog)
+#         QtCore.QMetaObject.connectSlotsByName(Dialog)
+#
+#     def retranslateUi(self, Dialog):
+#         _translate = QtCore.QCoreApplication.translate
+#         Dialog.setWindowTitle(_translate("Dialog", "Load"))
+#         self.label.setText(_translate("Dialog", "다운로드 진행중..."))
+#         self.label_2.setText(_translate("Dialog", "File"))
+
 
 ##############################################################################
 
