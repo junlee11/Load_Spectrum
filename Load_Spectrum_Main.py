@@ -1,6 +1,6 @@
 #210922 Project 시작
 
-import sys, os, re, time
+import sys, os, re, time, gc
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
@@ -13,11 +13,12 @@ import tkinter.messagebox
 from tkinter import ttk
 from tkinter import messagebox
 import shutil
-import keyboard
+#import keyboard
 import pyautogui
 from dateutil import parser
 from time import sleep
-
+from PyQt5.QtCore import pyqtSlot, QObject, pyqtSignal
+from pynput import keyboard
 
 #hot key 알아내기
 # while True:
@@ -124,13 +125,47 @@ class WindowClass(QMainWindow):
         self.list_e_ext.itemSelectionChanged.connect(self.mk_ext_list)
         #self.list_e_ext.currentItemChanged.connect(self.mk_ext_list)
 
+        ########status emit - slot################################3
+        #run
+        self.list_e_path1.run_signal.connect(self.status_to_run)
+        self.list_e_path2.run_signal.connect(self.status_to_run)
+        self.list_e_path3.run_signal.connect(self.status_to_run)
+        self.list_e_path4.run_signal.connect(self.status_to_run)
+        self.list_e_path5.run_signal.connect(self.status_to_run)
+        self.list_c_path.run_signal.connect(self.status_to_run)
+        #end
+        self.list_e_path1.end_signal.connect(self.status_to_end)
+        self.list_e_path2.end_signal.connect(self.status_to_end)
+        self.list_e_path3.end_signal.connect(self.status_to_end)
+        self.list_e_path4.end_signal.connect(self.status_to_end)
+        self.list_e_path5.end_signal.connect(self.status_to_end)
+        self.list_c_path.end_signal.connect(self.status_to_end)
+
+        #end to idle
+        self.list_e_line.clicked.connect(self.end_to_idle)
+        self.list_e_eqp.clicked.connect(self.end_to_idle)
+        self.list_e_drive.clicked.connect(self.end_to_idle)
+        self.list_e_ext.clicked.connect(self.end_to_idle)
+        self.list_e_path1.clicked.connect(self.end_to_idle)
+        self.list_e_path2.clicked.connect(self.end_to_idle)
+        self.list_e_path3.clicked.connect(self.end_to_idle)
+        self.list_e_path4.clicked.connect(self.end_to_idle)
+        self.list_e_path5.clicked.connect(self.end_to_idle)
+        self.list_c_drive.clicked.connect(self.end_to_idle)
+        self.list_c_path.clicked.connect(self.end_to_idle)
+
+        # idle로 다시 바꾸기, idel에 이미지 넣기, fail 처리하기
+        # 특정 단축키 눌렀을 때 중단 기능
+
         ########보조 push button
         self.push_eqp_info.clicked.connect(self.e_push_open_eqp)
         self.push_ext_info.clicked.connect(self.e_push_open_ext)
         self.push_manual.clicked.connect(self.e_push_open_manual)
         self.push_hotkey.clicked.connect(self.e_push_open_hotkey)
+
 ############################################################
 ##########################ftp 다운 보조 함수##################
+
     def e_address(self):
         global ftp_dic
         ftp_dic['e_line'] = self.line_e_cur_path.text()
@@ -144,6 +179,8 @@ class WindowClass(QMainWindow):
         ftp_dic['ext_list'] = [item.text() for item in self.list_e_ext.selectedItems()]
 ############################################################
 ############################################################
+    def onPosEvent(self, pos):
+        print(pos)
 
     #EQP 파일 열기
     def e_push_open_eqp(self):
@@ -373,12 +410,17 @@ class WindowClass(QMainWindow):
         self.e_path5_str = ''
         global ftp
         e_flag['e_path5'] += 1
-        if e_flag['e_path5'] == 1 : self.e_path5_idx = len(self.line_e_cur_path.text())
+        if e_flag['e_path5'] == 1 :
+            self.e_path5_idx = len(self.line_e_cur_path.text())
+            self.e_cur_path = ''
+            self.e_back_path = ''
+            self.e_fow_list = []
         #파일 열기 불가, 폴더 경로만 제어
         if self.ftp_isdir2(self.list_e_path5.currentItem().text()) :
             self.e_path5_str = self.e_path5_str + self.list_e_path5.currentItem().text() + '/'
-            path = self.line_e_cur_path.text()[self.ftp_ip_idx - 1:] + self.list_e_path5.currentItem().text()
-            arr_e_path, arr_e_path_mlsd = self.e_arr(path)
+            #print(self.line_e_cur_path.text()[self.ftp_ip_idx : ])
+            print(self.line_e_cur_path.text()[self.ftp_ip_idx -1  : ] + self.e_path5_str)
+            arr_e_path, arr_e_path_mlsd = self.e_arr(self.line_e_cur_path.text()[self.ftp_ip_idx-1 : ] + self.e_path5_str)
             self.e_path_list[4].clear()
             self.e_list_to_target(arr_e_path, arr_e_path_mlsd, 4)
             self.line_e_cur_path.setText(self.line_e_cur_path.text()[:self.e_path5_idx] + self.e_path5_str)
@@ -719,7 +761,7 @@ class WindowClass(QMainWindow):
 ##############################Form Code Start#########################################
     def setupUi(self, mainWindow):
         mainWindow.setObjectName("mainWindow")
-        mainWindow.resize(1252, 823)
+        mainWindow.resize(1217, 823)
         self.centralwidget = QtWidgets.QWidget(mainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.horizontalLayout_2 = QtWidgets.QHBoxLayout(self.centralwidget)
@@ -728,6 +770,81 @@ class WindowClass(QMainWindow):
         self.groupBox.setObjectName("groupBox")
         self.gridLayout = QtWidgets.QGridLayout(self.groupBox)
         self.gridLayout.setObjectName("gridLayout")
+        self.verticalLayout_9 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_9.setObjectName("verticalLayout_9")
+        self.label_9 = QtWidgets.QLabel(self.groupBox)
+        self.label_9.setObjectName("label_9")
+        self.verticalLayout_9.addWidget(self.label_9)
+        self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
+        self.push_e_back = QtWidgets.QPushButton(self.groupBox)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.push_e_back.sizePolicy().hasHeightForWidth())
+        self.push_e_back.setSizePolicy(sizePolicy)
+        self.push_e_back.setMaximumSize(QtCore.QSize(40, 16777215))
+        self.push_e_back.setObjectName("push_e_back")
+        self.horizontalLayout_5.addWidget(self.push_e_back)
+        self.push_e_foward = QtWidgets.QPushButton(self.groupBox)
+        self.push_e_foward.setMaximumSize(QtCore.QSize(40, 16777215))
+        self.push_e_foward.setObjectName("push_e_foward")
+        self.horizontalLayout_5.addWidget(self.push_e_foward)
+        self.push_e_new = QtWidgets.QPushButton(self.groupBox)
+        self.push_e_new.setMaximumSize(QtCore.QSize(100, 16777215))
+        self.push_e_new.setObjectName("push_e_new")
+        self.horizontalLayout_5.addWidget(self.push_e_new)
+        self.push_e_del = QtWidgets.QPushButton(self.groupBox)
+        self.push_e_del.setMaximumSize(QtCore.QSize(100, 16777215))
+        self.push_e_del.setObjectName("push_e_del")
+        self.horizontalLayout_5.addWidget(self.push_e_del)
+        self.verticalLayout_9.addLayout(self.horizontalLayout_5)
+
+        #list_e_path5
+        self.list_e_path5 = Lst_e_path5(self.groupBox)
+        self.list_e_path5.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.list_e_path5.setDragEnabled(True)
+        self.list_e_path5.setDragDropOverwriteMode(False)
+        self.list_e_path5.setDefaultDropAction(Qt.MoveAction)
+        self.list_e_path5.setObjectName("list_e_path5")
+        self.verticalLayout_9.addWidget(self.list_e_path5)
+
+        self.gridLayout.addLayout(self.verticalLayout_9, 1, 3, 3, 1)
+        self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_4.setObjectName("horizontalLayout_4")
+        self.verticalLayout_7 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_7.setObjectName("verticalLayout_7")
+        self.label_7 = QtWidgets.QLabel(self.groupBox)
+        self.label_7.setObjectName("label_7")
+        self.verticalLayout_7.addWidget(self.label_7)
+
+        # list_e_path3
+        self.list_e_path3 = Lst_e_path3(self.groupBox)
+        self.list_e_path3.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.list_e_path3.setDragEnabled(True)
+        self.list_e_path3.setDragDropOverwriteMode(False)
+        self.list_e_path3.setDefaultDropAction(Qt.MoveAction)
+        self.list_e_path3.setObjectName("list_e_path3")
+        self.verticalLayout_7.addWidget(self.list_e_path3)
+
+        self.horizontalLayout_4.addLayout(self.verticalLayout_7)
+        self.verticalLayout_8 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_8.setObjectName("verticalLayout_8")
+        self.label_8 = QtWidgets.QLabel(self.groupBox)
+        self.label_8.setObjectName("label_8")
+        self.verticalLayout_8.addWidget(self.label_8)
+
+        # list_e_path4
+        self.list_e_path4 = Lst_e_path4(self.groupBox)
+        self.list_e_path4.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.list_e_path4.setDragEnabled(True)
+        self.list_e_path4.setDragDropOverwriteMode(False)
+        self.list_e_path4.setDefaultDropAction(Qt.MoveAction)
+        self.list_e_path4.setObjectName("list_e_path4")
+        self.verticalLayout_8.addWidget(self.list_e_path4)
+
+        self.horizontalLayout_4.addLayout(self.verticalLayout_8)
+        self.gridLayout.addLayout(self.horizontalLayout_4, 3, 0, 1, 1)
         self.verticalLayout_4 = QtWidgets.QVBoxLayout()
         self.verticalLayout_4.setSpacing(0)
         self.verticalLayout_4.setObjectName("verticalLayout_4")
@@ -803,81 +920,6 @@ class WindowClass(QMainWindow):
         self.verticalLayout_13.addWidget(self.push_ext_info)
         self.horizontalLayout.addLayout(self.verticalLayout_13)
         self.gridLayout.addLayout(self.horizontalLayout, 0, 0, 1, 1)
-        self.verticalLayout_9 = QtWidgets.QVBoxLayout()
-        self.verticalLayout_9.setObjectName("verticalLayout_9")
-        self.label_9 = QtWidgets.QLabel(self.groupBox)
-        self.label_9.setObjectName("label_9")
-        self.verticalLayout_9.addWidget(self.label_9)
-        self.horizontalLayout_5 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
-        self.push_e_back = QtWidgets.QPushButton(self.groupBox)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.push_e_back.sizePolicy().hasHeightForWidth())
-        self.push_e_back.setSizePolicy(sizePolicy)
-        self.push_e_back.setMaximumSize(QtCore.QSize(40, 16777215))
-        self.push_e_back.setObjectName("push_e_back")
-        self.horizontalLayout_5.addWidget(self.push_e_back)
-        self.push_e_foward = QtWidgets.QPushButton(self.groupBox)
-        self.push_e_foward.setMaximumSize(QtCore.QSize(40, 16777215))
-        self.push_e_foward.setObjectName("push_e_foward")
-        self.horizontalLayout_5.addWidget(self.push_e_foward)
-        self.push_e_new = QtWidgets.QPushButton(self.groupBox)
-        self.push_e_new.setMaximumSize(QtCore.QSize(100, 16777215))
-        self.push_e_new.setObjectName("push_e_new")
-        self.horizontalLayout_5.addWidget(self.push_e_new)
-        self.push_e_del = QtWidgets.QPushButton(self.groupBox)
-        self.push_e_del.setMaximumSize(QtCore.QSize(100, 16777215))
-        self.push_e_del.setObjectName("push_e_del")
-        self.horizontalLayout_5.addWidget(self.push_e_del)
-        self.verticalLayout_9.addLayout(self.horizontalLayout_5)
-
-        #self.list_e_path5
-        self.list_e_path5 = Lst_e_path5(self.groupBox)
-        self.list_e_path5.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        self.list_e_path5.setDragEnabled(True)
-        self.list_e_path5.setDragDropOverwriteMode(False)
-        self.list_e_path5.setDefaultDropAction(Qt.MoveAction)
-        self.list_e_path5.setObjectName("list_e_path5")
-        self.verticalLayout_9.addWidget(self.list_e_path5)
-
-        self.gridLayout.addLayout(self.verticalLayout_9, 1, 3, 3, 1)
-        self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_4.setObjectName("horizontalLayout_4")
-        self.verticalLayout_7 = QtWidgets.QVBoxLayout()
-        self.verticalLayout_7.setObjectName("verticalLayout_7")
-        self.label_7 = QtWidgets.QLabel(self.groupBox)
-        self.label_7.setObjectName("label_7")
-        self.verticalLayout_7.addWidget(self.label_7)
-
-        #list_e_path3
-        self.list_e_path3 = Lst_e_path3(self.groupBox)
-        self.list_e_path3.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        self.list_e_path3.setDragEnabled(True)
-        self.list_e_path3.setDragDropOverwriteMode(False)
-        self.list_e_path3.setDefaultDropAction(Qt.MoveAction)
-        self.list_e_path3.setObjectName("list_e_path3")
-        self.verticalLayout_7.addWidget(self.list_e_path3)
-
-        self.horizontalLayout_4.addLayout(self.verticalLayout_7)
-        self.verticalLayout_8 = QtWidgets.QVBoxLayout()
-        self.verticalLayout_8.setObjectName("verticalLayout_8")
-        self.label_8 = QtWidgets.QLabel(self.groupBox)
-        self.label_8.setObjectName("label_8")
-        self.verticalLayout_8.addWidget(self.label_8)
-
-        # list_e_path4
-        self.list_e_path4 = Lst_e_path4(self.groupBox)
-        self.list_e_path4.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        self.list_e_path4.setDragEnabled(True)
-        self.list_e_path4.setDragDropOverwriteMode(False)
-        self.list_e_path4.setDefaultDropAction(Qt.MoveAction)
-        self.list_e_path4.setObjectName("list_e_path4")
-        self.verticalLayout_8.addWidget(self.list_e_path4)
-
-        self.horizontalLayout_4.addLayout(self.verticalLayout_8)
-        self.gridLayout.addLayout(self.horizontalLayout_4, 3, 0, 1, 1)
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
         self.verticalLayout_5 = QtWidgets.QVBoxLayout()
@@ -886,7 +928,7 @@ class WindowClass(QMainWindow):
         self.label_5.setObjectName("label_5")
         self.verticalLayout_5.addWidget(self.label_5)
 
-        #list_e_path1
+        # list_e_path1
         self.list_e_path1 = Lst_e_path1(self.groupBox)
         self.list_e_path1.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.list_e_path1.setDragEnabled(True)
@@ -902,7 +944,7 @@ class WindowClass(QMainWindow):
         self.label_6.setObjectName("label_6")
         self.verticalLayout_6.addWidget(self.label_6)
 
-        #list_e_path2
+        # list_e_path2
         self.list_e_path2 = Lst_e_path2(self.groupBox)
         self.list_e_path2.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.list_e_path2.setDragEnabled(True)
@@ -913,17 +955,37 @@ class WindowClass(QMainWindow):
 
         self.horizontalLayout_3.addLayout(self.verticalLayout_6)
         self.gridLayout.addLayout(self.horizontalLayout_3, 2, 0, 1, 1)
-        self.verticalLayout_14 = QtWidgets.QVBoxLayout()
-        self.verticalLayout_14.setObjectName("verticalLayout_14")
+        self.horizontalLayout_9 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_9.setObjectName("horizontalLayout_9")
+        self.verticalLayout_17 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_17.setObjectName("verticalLayout_17")
         self.push_manual = QtWidgets.QPushButton(self.groupBox)
         self.push_manual.setMaximumSize(QtCore.QSize(100, 16777215))
         self.push_manual.setObjectName("push_manual")
-        self.verticalLayout_14.addWidget(self.push_manual)
+        self.verticalLayout_17.addWidget(self.push_manual)
         self.push_hotkey = QtWidgets.QPushButton(self.groupBox)
         self.push_hotkey.setMaximumSize(QtCore.QSize(100, 16777215))
         self.push_hotkey.setObjectName("push_hotkey")
-        self.verticalLayout_14.addWidget(self.push_hotkey)
-        self.gridLayout.addLayout(self.verticalLayout_14, 0, 3, 1, 1)
+        self.verticalLayout_17.addWidget(self.push_hotkey)
+        self.horizontalLayout_9.addLayout(self.verticalLayout_17)
+        self.groupBox_3 = QtWidgets.QGroupBox(self.groupBox)
+        self.groupBox_3.setObjectName("groupBox_3")
+        self.horizontalLayout_7 = QtWidgets.QHBoxLayout(self.groupBox_3)
+        self.horizontalLayout_7.setObjectName("horizontalLayout_7")
+        self.label_status = QtWidgets.QLabel(self.groupBox_3)
+        self.label_status.setMinimumSize(QtCore.QSize(0, 0))
+        self.label_status.setMaximumSize(QtCore.QSize(80, 16777215))
+        self.label_status.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_status.setObjectName("label_status")
+        self.horizontalLayout_7.addWidget(self.label_status)
+        self.label_image = QtWidgets.QLabel(self.groupBox_3)
+        self.label_image.setMinimumSize(QtCore.QSize(0, 0))
+        self.label_image.setMaximumSize(QtCore.QSize(800, 16777215))
+        self.label_image.setAlignment(QtCore.Qt.AlignCenter)
+        self.label_image.setObjectName("label_image")
+        self.horizontalLayout_7.addWidget(self.label_image)
+        self.horizontalLayout_9.addWidget(self.groupBox_3)
+        self.gridLayout.addLayout(self.horizontalLayout_9, 0, 3, 1, 1)
         self.gridLayout.setColumnStretch(0, 1)
         self.gridLayout.setColumnStretch(1, 1)
         self.gridLayout.setColumnStretch(3, 30)
@@ -938,17 +1000,14 @@ class WindowClass(QMainWindow):
         self.gridLayout_2.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
         self.gridLayout_2.setObjectName("gridLayout_2")
 
-        #self.list_c_path
+        # list_c_path
         self.list_c_path = Lst_c_path(self.groupBox_2)
-        #self.list_c_path = QtWidgets.QListWidget(self.groupBox_2)
-        #self.list_c_path.setDragDropMode(QtWidgets.QAbstractItemView.DragOnly)
         self.list_c_path.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.list_c_path.setDragEnabled(True)
         self.list_c_path.setDragDropOverwriteMode(False)
         self.list_c_path.setDefaultDropAction(Qt.MoveAction)
         self.list_c_path.setObjectName("list_c_path")
         self.gridLayout_2.addWidget(self.list_c_path, 3, 0, 1, 2)
-
 
         self.verticalLayout_10 = QtWidgets.QVBoxLayout()
         self.verticalLayout_10.setObjectName("verticalLayout_10")
@@ -1000,7 +1059,7 @@ class WindowClass(QMainWindow):
         self.horizontalLayout_2.setStretch(1, 4)
         mainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(mainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1252, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1217, 26))
         self.menubar.setObjectName("menubar")
         mainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(mainWindow)
@@ -1014,13 +1073,6 @@ class WindowClass(QMainWindow):
         _translate = QtCore.QCoreApplication.translate
         mainWindow.setWindowTitle(_translate("mainWindow", "EQP_Local"))
         self.groupBox.setTitle(_translate("mainWindow", "EQP "))
-        self.label_10.setText(_translate("mainWindow", "현재 경로"))
-        self.label.setText(_translate("mainWindow", "Line"))
-        self.label_12.setText(_translate("mainWindow", "EQP"))
-        self.label_2.setText(_translate("mainWindow", "Drive"))
-        self.label_3.setText(_translate("mainWindow", "확장자"))
-        self.push_eqp_info.setText(_translate("mainWindow", "EQP 등록"))
-        self.push_ext_info.setText(_translate("mainWindow", "확장자 등록"))
         self.label_9.setText(_translate("mainWindow", "Path5"))
         self.push_e_back.setText(_translate("mainWindow", "◀"))
         self.push_e_foward.setText(_translate("mainWindow", "▶"))
@@ -1028,10 +1080,30 @@ class WindowClass(QMainWindow):
         self.push_e_del.setText(_translate("mainWindow", "삭제(ctrl+d)"))
         self.label_7.setText(_translate("mainWindow", "Path3"))
         self.label_8.setText(_translate("mainWindow", "Path4"))
+        self.label_10.setText(_translate("mainWindow", "현재 경로"))
+        self.label.setText(_translate("mainWindow", "Line"))
+        self.label_12.setText(_translate("mainWindow", "EQP"))
+        self.label_2.setText(_translate("mainWindow", "Drive"))
+        self.label_3.setText(_translate("mainWindow", "확장자"))
+        self.push_eqp_info.setText(_translate("mainWindow", "EQP 등록"))
+        self.push_ext_info.setText(_translate("mainWindow", "확장자 등록"))
         self.label_5.setText(_translate("mainWindow", "Path1"))
         self.label_6.setText(_translate("mainWindow", "Path2"))
         self.push_manual.setText(_translate("mainWindow", "사용법"))
         self.push_hotkey.setText(_translate("mainWindow", "단축키"))
+        self.groupBox_3.setTitle(_translate("mainWindow", "Load Status"))
+        #self.label_status.setText(_translate("mainWindow", "<html><head/><body><p><span style=\" font-weight:600;\">IDLE</span></p></body></html>"))
+        #idle 설정
+        self.label_status.setText('IDLE')
+        self.label_status.setFont(QtGui.QFont('default', weight=QtGui.QFont.Bold))
+        self.label_status.setStyleSheet('Color : green')
+        #image
+        self.label_image.setText(_translate("mainWindow", "image"))
+        pix = QPixmap()
+        pix.load('Image_idle.png')
+        pix2 = pix.scaled(65, 65)
+        self.label_image.setPixmap(pix2)
+
         self.groupBox_2.setTitle(_translate("mainWindow", "Local"))
         self.label_4.setText(_translate("mainWindow", "Drive"))
         self.label_11.setText(_translate("mainWindow", "현재 경로"))
@@ -1042,190 +1114,145 @@ class WindowClass(QMainWindow):
 ####################################################################################
 ##############################Form Code End#########################################
 
+############################status_signal###########################################
+
+    #idle 설정
+    def mousePressEvent(self, event):
+        if self.label_status.text() == 'END':
+            self.label_status.setText('IDLE')
+            self.label_status.setFont(QtGui.QFont('defulat', weight=QtGui.QFont.Bold))
+            self.label_status.setStyleSheet('Color : green')
+
+            pix = QPixmap()
+            pix.load('Image_idle.png')
+            pix2 = pix.scaled(65, 65)
+            self.label_image.setPixmap(pix2)
+
+    def end_to_idle(self):
+        if self.label_status.text() == 'END':
+            self.label_status.setText('IDLE')
+            self.label_status.setFont(QtGui.QFont('default', weight=QtGui.QFont.Bold))
+            self.label_status.setStyleSheet('Color : green')
+
+            pix = QPixmap()
+            pix.load('Image_idle.png')
+            pix2 = pix.scaled(65, 65)
+            self.label_image.setPixmap(pix2)
+
+    #mouse drop 시작
+    @pyqtSlot()
+    def status_to_run(self):
+
+        self.label_status.setText('RUN')
+        self.label_status.setFont(QtGui.QFont('default', weight=QtGui.QFont.Bold))
+        self.label_status.setStyleSheet('Color : purple')
+
+        pix = QPixmap()
+        pix.load('Image_run.png')
+        pix2 = pix.scaled(65, 65)
+        self.label_image.setPixmap(pix2)
+
+    @pyqtSlot()
+    def status_to_end(self):
+        self.label_status.setText('END')
+        self.label_status.setFont(QtGui.QFont('default', weight=QtGui.QFont.Bold))
+        self.label_status.setStyleSheet('Color : blue')
+
+        pix = QPixmap()
+        pix.load('Image_done.png')
+        pix2 = pix.scaled(65, 65)
+        self.label_image.setPixmap(pix2)
+
+
 #ftp upload
 class Lst_e_path1(QListWidget):
+    run_signal = pyqtSignal()
+    end_signal = pyqtSignal()
     def __init__(self, parent=None):
         super(Lst_e_path1, self).__init__(parent)
         self.setAcceptDrops(True)
-        global ftp
 
     def dropEvent(self, QDropEvent):
-        global ftp
-        global ftp_dic
-
-        source_Widget = QDropEvent.source()
-        print(source_Widget.objectName())
-        if 'list_e_path' in source_Widget.objectName() : return
-        ########################################################위 공통
-        ###############상태바
-        self.thread_pgb = Thread_pgb()
-        self.thread_pgb.start()
-        # thread_pgb.working = True
-
-        ftp_dic['item_list_up'] = [item.text() for item in source_Widget.selectedItems()]  # str
-        items = source_Widget.selectedItems()
-        if ftp_dic['e_line'][-1] == '/':
-            ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'], 1)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
-        else:
-            ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'] + '/', 1)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
-        upload_to_eqp(ftp_dic)  # upload
-
-        for i in items:
-            if e_flag['overwrite_u'][i.text()] == 0:
-                icon_item = QListWidgetItem(i.icon(), i.text())
-                self.addItem(icon_item)
-
-        #################상태바 다운로드 종료
-        self.thread_pgb.stop()
-        self.thread_pgb.wait()
+        self.run_signal.emit()
+        common_path_fun(QDropEvent.source(), self, 1)
+        self.end_signal.emit()
 
 class Lst_e_path2(QListWidget):
+    run_signal = pyqtSignal()
+    end_signal = pyqtSignal()
     def __init__(self, parent=None):
         super(Lst_e_path2, self).__init__(parent)
         self.setAcceptDrops(True)
-        global ftp
 
     def dropEvent(self, QDropEvent):
-        global ftp
-        global ftp_dic
-
-        source_Widget = QDropEvent.source()
-
-        e_flag['all_overwrite'] = 0
-        e_flag['ask_cnt'] = 0
-
-        if 'list_e_path' in source_Widget.objectName() : return
-
-        ########################################################위 공통
-        ###############상태바
-        self.thread_pgb = Thread_pgb()
-        self.thread_pgb.start()
-        # thread_pgb.working = True
-
-        ftp_dic['item_list_up'] = [item.text() for item in source_Widget.selectedItems()]  # str
-        items = source_Widget.selectedItems()
-        if ftp_dic['e_line'][-1] == '/' : ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'], 2)         #몇번째 리스트까지의 경로를 가져올지에 대한 함수
-        else : ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'] + '/', 2)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
-        upload_to_eqp(ftp_dic)  # upload
-
-        for i in items:
-            if e_flag['overwrite_u'][i.text()] == 0:
-                icon_item = QListWidgetItem(i.icon(), i.text())
-                self.addItem(icon_item)
-
-        #################상태바 다운로드 종료
-        self.thread_pgb.stop()
-        self.thread_pgb.wait()
+        self.run_signal.emit()
+        common_path_fun(QDropEvent.source(), self, 2)
+        self.end_signal.emit()
 
 class Lst_e_path3(QListWidget):
+    run_signal = pyqtSignal()
+    end_signal = pyqtSignal()
     def __init__(self, parent=None):
         super(Lst_e_path3, self).__init__(parent)
         self.setAcceptDrops(True)
-        global ftp
 
     def dropEvent(self, QDropEvent):
-        global ftp
-        global ftp_dic
-
-        source_Widget = QDropEvent.source()
-        #print(source_Widget.objectName())
-        if 'list_e_path' in source_Widget.objectName() : return
-        ########################################################위 공통
-        ###############상태바
-        self.thread_pgb = Thread_pgb()
-        self.thread_pgb.start()
-        # thread_pgb.working = True
-
-        ftp_dic['item_list_up'] = [item.text() for item in source_Widget.selectedItems()]  # str
-        items = source_Widget.selectedItems()
-        if ftp_dic['e_line'][-1] == '/':
-            ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'], 3)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
-        else:
-            ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'] + '/', 3)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
-        upload_to_eqp(ftp_dic)  # upload
-
-        for i in items:
-            if e_flag['overwrite_u'][i.text()] == 0:
-                icon_item = QListWidgetItem(i.icon(), i.text())
-                self.addItem(icon_item)
-
-        #################상태바 다운로드 종료
-        self.thread_pgb.stop()
-        self.thread_pgb.wait()
+        self.run_signal.emit()
+        common_path_fun(QDropEvent.source(), self, 3)
+        self.end_signal.emit()
 
 class Lst_e_path4(QListWidget):
+    run_signal = pyqtSignal()
+    end_signal = pyqtSignal()
     def __init__(self, parent=None):
         super(Lst_e_path4, self).__init__(parent)
         self.setAcceptDrops(True)
-        global ftp
 
     def dropEvent(self, QDropEvent):
-        global ftp
-        global ftp_dic
-
-        source_Widget = QDropEvent.source()
-        print(source_Widget.objectName())
-        if 'list_e_path' in source_Widget.objectName() : return
-        ########################################################위 공통
-        ###############상태바
-        self.thread_pgb = Thread_pgb()
-        self.thread_pgb.start()
-        # thread_pgb.working = True
-
-        ftp_dic['item_list_up'] = [item.text() for item in source_Widget.selectedItems()]  # str
-        items = source_Widget.selectedItems()
-        if ftp_dic['e_line'][-1] == '/':
-            ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'], 4)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
-        else:
-            ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'] + '/', 4)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
-        upload_to_eqp(ftp_dic)  # upload
-
-        for i in items:
-            if e_flag['overwrite_u'][i.text()] == 0:
-                icon_item = QListWidgetItem(i.icon(), i.text())
-                self.addItem(icon_item)
-
-        #################상태바 다운로드 종료
-        self.thread_pgb.stop()
-        self.thread_pgb.wait()
+        self.run_signal.emit()
+        common_path_fun(QDropEvent.source(), self, 4)
+        self.end_signal.emit()
 
 class Lst_e_path5(QListWidget):
+    run_signal = pyqtSignal()
+    end_signal = pyqtSignal()
     def __init__(self, parent=None):
         super(Lst_e_path5, self).__init__(parent)
         self.setAcceptDrops(True)
-        global ftp
 
     def dropEvent(self, QDropEvent):
-        global ftp
-        global ftp_dic
+        self.run_signal.emit()
+        common_path_fun(QDropEvent.source(), self, 5)
+        self.end_signal.emit()
 
-        source_Widget = QDropEvent.source()
-        print(source_Widget.objectName())
-        if 'list_e_path' in source_Widget.objectName() : return
-        ########################################################위 공통
-        ###############상태바
-        self.thread_pgb = Thread_pgb()
-        self.thread_pgb.start()
-        # thread_pgb.working = True
+def common_path_fun(source_Widget, target_widget, n):
+    global ftp_dic
+    global a
 
-        ftp_dic['item_list_up'] = [item.text() for item in source_Widget.selectedItems()]  # str
-        items = source_Widget.selectedItems()
-        if ftp_dic['e_line'][-1] == '/':
-            ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'], 5)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
-        else:
-            ftp_dic['e_line'] = find_upload_index(ftp_dic['e_line'] + '/', 5)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
-        upload_to_eqp(ftp_dic)  # upload
+    if 'list_e_path' in source_Widget.objectName(): return
 
-        for i in items:
+    e_flag['all_overwrite'] = 0
+    e_flag['ask_cnt'] = 0
+    e_flag['overwrite_u'] = {}
+
+    ftp_dic['item_list_up'] = [item.text() for item in source_Widget.selectedItems()]  # str
+    items = source_Widget.selectedItems()
+    copy_ftp_dic = ftp_dic.copy()
+
+    if copy_ftp_dic['e_line'][-1] == '/':
+        copy_ftp_dic['e_line'] = find_upload_index(copy_ftp_dic['e_line'], n)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
+    else:
+        copy_ftp_dic['e_line'] = find_upload_index(copy_ftp_dic['e_line'] + '/', n)  # 몇번째 리스트까지의 경로를 가져올지에 대한 함수
+    upload_to_eqp(copy_ftp_dic)  # upload
+
+    for i in items:
+        try:
             if e_flag['overwrite_u'][i.text()] == 0:
                 icon_item = QListWidgetItem(i.icon(), i.text())
-                self.addItem(icon_item)
+                target_widget.addItem(icon_item)
+        except Exception as e:
+            pass  # 중간에 정지한 경우 overwite_u 할당되지 않아 keyerorr 발생
 
-        #################상태바 다운로드 종료
-        self.thread_pgb.stop()
-        self.thread_pgb.wait()
-
-#211002 여기부터
 def find_upload_index(f_path,n):
     sum = 0
     temp = 0
@@ -1238,11 +1265,10 @@ def find_upload_index(f_path,n):
     #print(temp_path[:sum-1])
     return temp_path[:sum-1]
 
-
 #ftp upload
 def upload_to_eqp(f_dic):       #전체 다운
     global ftp
-    print(f_dic)
+    #print(f_dic)
     idx = f_dic['e_line'].find('/',7) + 2
     #f_dic['e_line'] = f_dic['e_line'][idx:] #여기서 변함
     ftp_path = f_dic['e_line'][idx:]
@@ -1252,6 +1278,7 @@ def upload_to_eqp(f_dic):       #전체 다운
     for filename in f_dic['item_list_up']:
         try:
             upload_local_Files(f_dic['c_line'] + '\\' + filename, ftp_path)
+            if cancel_flag == 1 : return
             ftp.cwd(origin)
         except PermissionError as e:
             pyautogui.alert('다운받을 수 없는 경로입니다.', 'FTP Upload Interlock')
@@ -1266,9 +1293,9 @@ def ftp_is_in(str):
     except KeyError:
         return False
 
-
 def upload_local_Files(local, ftp_path):      #1개 path 다운
-    if cancel_flag == 1 : return
+    if cancel_flag == 1 :
+        return
     global ftp
     global ftp_dic
     m_list = []
@@ -1281,7 +1308,8 @@ def upload_local_Files(local, ftp_path):      #1개 path 다운
             t = local.replace('\\', '/')
             p = ftp_path + t[t.rfind('/'):]
             ftp.mkd(p)
-        except: #중복될때
+            e_flag['overwrite_u'][t[t.rfind('/') + 1:]] = 0
+        except Exception as e: #중복될때
             #e_flag['folder_overwrite_u'] = 0
             folder = t[t.rfind('/') + 1:]
             if e_flag['ask_cnt'] < 4:
@@ -1302,7 +1330,7 @@ def upload_local_Files(local, ftp_path):      #1개 path 다운
         a=''
         t = local.replace('\\', '/')
         #print(t[t.rfind('/') : ])
-        print(t[t.rfind('/') + 1:])
+        #print(t[t.rfind('/') + 1:])
         if ftp_is_in(t[t.rfind('/') +1 : ]):
             if e_flag['ask_cnt'] < 4 : a = pyautogui.confirm(t[t.rfind('/') +1 : ] + '\n이미 존재하는 파일입니다. 덮어 씌우겠습니까?', title='FTP Down Interlock', buttons=['Yes', 'No'])
             else:
@@ -1353,6 +1381,7 @@ def upload_local_Files(local, ftp_path):      #1개 path 다운
             upload_local_Files(local + '\\' + file, ftp_path + t[t.rfind('/'):])
 
         else :                       #파일일때
+            a=''
             ftp.cwd(ftp_path + t[t.rfind('/'):])
             if ftp_is_in(file):
                 if e_flag['ask_cnt'] < 4:
@@ -1370,23 +1399,25 @@ def upload_local_Files(local, ftp_path):      #1개 path 다운
                     ftp.storbinary("STOR " + file, fd)
                     fd.close()
                     e_flag['ask_cnt'] += 1
-                    return
+                    continue
                 else:
-                    e_flag['overwrite'][ftp_path[ftp_path.rfind('/') + 1:]] = 1
+                    e_flag['overwrite_u'][file] = 1
                     e_flag['ask_cnt'] += 1
-                    return
+                    continue
 
             else:
                 fd = open(local + '\\' + file, 'rb')  # download local path
                 ftp.storbinary("STOR " + file, fd)
                 fd.close()
-                e_flag['ask_cnt'] += 1
-                return
+                e_flag['overwrite_u'][file] = 0
+                continue
 
 
 ###########################################################################################
 #ftp download
 class Lst_c_path(QListWidget):
+    run_signal = pyqtSignal()
+    end_signal = pyqtSignal()
     def __init__(self, parent=None):
         super(Lst_c_path, self).__init__(parent)
         self.setAcceptDrops(True)
@@ -1395,14 +1426,15 @@ class Lst_c_path(QListWidget):
     def dropEvent(self, QDropEvent):
         global ftp
         global ftp_dic
+
         e_flag['all_overwrite'] = 0
         e_flag['ask_cnt'] = 0
         source_Widget = QDropEvent.source()
         if 'list_c_path' in source_Widget.objectName(): return
+        self.run_signal.emit()
 
         ############상태바
-        self.thread_pgb = Thread_pgb()
-        self.thread_pgb.start()
+        e_flag['overwrite'] = {}
 
         ftp_dic['item_list'] = [item.text() for item in source_Widget.selectedItems()]      #str
         items = source_Widget.selectedItems()
@@ -1415,11 +1447,7 @@ class Lst_c_path(QListWidget):
                 icon_item = QListWidgetItem(i.icon(), i.text())
                 self.addItem(icon_item)
 
-        # print(source_Widget.objectName())
-        #################상태바 다운로드 종료
-        self.thread_pgb.stop()
-        self.thread_pgb.wait()
-
+        self.end_signal.emit()
 
 
 def download_to_local(f_dic):       #전체 다운
@@ -1479,6 +1507,7 @@ def download_FTP_Files(path, destination):      #1개 path 다운
         mtime = parser.parse(timestamp)
         #파일 존재하면 인터락
         if os.path.isfile(destination + '\\' + path[path.rfind('/') + 1 :]):
+            a=''
             if e_flag['ask_cnt'] < 4 : a = pyautogui.confirm(path[path.rfind('/') + 1 :] + '\n이미 존재하는 파일입니다. 덮어 씌우겠습니까?', title='FTP Down Interlock', buttons=['Yes', 'No'])
             else:
                 if e_flag['all_overwrite'] == 0 :
@@ -1593,68 +1622,6 @@ def mkdir_p(path):
 #############################################################################
 #################################pgb#########################################
 
-class Thread_pgb(QThread):
-    #def __init__(self):
-
-    def run(self):
-        global cancel_flag
-        cancel_flag = 0
-        m = pyautogui.alert('파일을 업로드(다운로드) 중입니다. ','업로드(다운로드) 중입니다.', button='취소하기')
-        if m == 'Cancel' : cancel_flag = 1
-
-        #w = AnotherWindow2()
-        # w = Load_pgb_dialog()
-        # w.exec_()
-        # print('good')
-        # sleep(1)
-
-    def stop(self):
-        self.terminate()
-
-
-#다운로드 / 업로드 진척을 QProgressBar로 표현하기 : 현재 실력부족으로 추후 진행
-# form_class_pgb = uic.loadUiType("Load_pgb.ui")[0]
-# class Load_pgb_dialog(QDialog, form_class_pgb):
-#     def __init__(self):
-#         super().__init__()  # 기반 클래스의 생성자 실행 : QMainWindow의 생성자 호출
-#         self.setupUi(self)
-#
-#     ###PGB Ui
-#     def setupUi(self, Dialog):
-#         Dialog.setObjectName("Dialog")
-#         Dialog.resize(254, 118)
-#         self.verticalLayout_2 = QtWidgets.QVBoxLayout(Dialog)
-#         self.verticalLayout_2.setObjectName("verticalLayout_2")
-#         self.verticalLayout = QtWidgets.QVBoxLayout()
-#         self.verticalLayout.setObjectName("verticalLayout")
-#         self.label = QtWidgets.QLabel(Dialog)
-#         self.label.setObjectName("label")
-#         self.verticalLayout.addWidget(self.label)
-#         self.label_2 = QtWidgets.QLabel(Dialog)
-#         self.label_2.setObjectName("label_2")
-#         self.verticalLayout.addWidget(self.label_2)
-#         self.line = QtWidgets.QFrame(Dialog)
-#         self.line.setFrameShape(QtWidgets.QFrame.HLine)
-#         self.line.setFrameShadow(QtWidgets.QFrame.Sunken)
-#         self.line.setObjectName("line")
-#         self.verticalLayout.addWidget(self.line)
-#         self.pgb = QtWidgets.QProgressBar(Dialog)
-#         self.pgb.setProperty("value", 24)
-#         self.pgb.setObjectName("pgb")
-#         self.verticalLayout.addWidget(self.pgb)
-#         self.verticalLayout_2.addLayout(self.verticalLayout)
-#
-#         self.retranslateUi(Dialog)
-#         QtCore.QMetaObject.connectSlotsByName(Dialog)
-#
-#     def retranslateUi(self, Dialog):
-#         _translate = QtCore.QCoreApplication.translate
-#         Dialog.setWindowTitle(_translate("Dialog", "Load"))
-#         self.label.setText(_translate("Dialog", "다운로드 진행중..."))
-#         self.label_2.setText(_translate("Dialog", "File"))
-
-
-##############################################################################
 
 if __name__ == "__main__" :
     app = QApplication(sys.argv)
