@@ -3,3 +3,4 @@ Local C Drive # C:
 Local D Drive # D:
 Local E Drive # E:
 Local C Drive_test # C:\0.path_test
+Raw Data_TestPath # C:\0.path_test\Lot Raw Data

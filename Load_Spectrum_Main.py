@@ -17,7 +17,6 @@ import pyautogui
 from dateutil import parser
 from time import sleep
 from PyQt5.QtCore import pyqtSlot, QObject, pyqtSignal
-import subprocess
 
 #hot key 알아내기
 # while True:
@@ -27,12 +26,8 @@ c_flag = {'c_is_inf' : 0, 'c_access' : 0, 'back' : 0}
 e_flag = {'e_is_path' : 0, 'e_path5' : 0, 'back' : 0, 'e_find' : 0, 'overwrite' : {}, 'folder_overwrite' : 0,
           'ask_cnt' : 0, 'all_overwrite' : 0, 'ext' : {}, 'overwrite_u' : {}, 'folder_overwrite_u' : {}, 'empty' : 0, 'self_drop' : 0}
 ftp_dic = {'e_line' : '', 'c_line' : '', 'item_list' : [], 'ext_list' : [], 'item_list_up' : [], 'id' : '', 'pw' : '', 'ip' : ''}
-cancel_flag = 0
+cancel_flag = 0     #Load 중 thread에서 전달받은 인자로 load 중단 시키려는 flag, 구현 못해서 추후 시도
 
-#form_class = uic.loadUiType("Load_Main_EQP_Local.ui")[0]
-#form_class = uic.loadUiType("Load_Main_Local_EQP.ui")[0]
-
-#class WindowClass(QMainWindow, form_class) :
 class WindowClass(QMainWindow):
 
     def __init__(self) :
@@ -52,14 +47,11 @@ class WindowClass(QMainWindow):
         self.e_path5_str = ''
         ftp = None
 
-        #ftp 연결 3분마다 유지 쓰레드
+        #일정 주기로 ftp 접속하는 thread, ftp 특정 시간 지나면 접속 해제 되는거 방지
         self.th = TestThread(self)
         self.th.threadEvent.connect(self.threadEventHandler)
 
-        #Local
-        #self.list_c_drive.addItem('C:')
-        #self.list_c_drive.addItem('D:')
-        #self.list_c_drive.addItem('E:')
+        #########################Local Box################################
         self.df_local = pd.read_csv('info_local_path.txt')
         self.path_name = set(self.df_local['PathName # Path'])
         self.path_name = list(self.path_name)
@@ -69,14 +61,14 @@ class WindowClass(QMainWindow):
 
         self.list_c_drive.itemClicked.connect(self.c_drive_clk)
         self.list_c_path.itemDoubleClicked.connect(self.c_path_dbclk)
+
         self.push_c_back.clicked.connect(self.c_push_back_clk)
         self.push_c_foward.clicked.connect(self.c_push_fow_clk)
         self.push_c_new.clicked.connect(self.c_push_new_clk)
         self.push_c_del.clicked.connect(self.c_push_del_clk)
 
-        ######################################################################
         #########################hokey setting################################
-        self.shortcut_open = QShortcut(QKeySequence('backspace'), self)        #단축키 설정
+        self.shortcut_open = QShortcut(QKeySequence('backspace'), self)
         self.shortcut_open.activated.connect(self.c_push_back_clk)
         self.shortcut_open = QShortcut(QKeySequence('delete'), self)
         self.shortcut_open.activated.connect(self.c_push_del_clk)
@@ -87,9 +79,7 @@ class WindowClass(QMainWindow):
         self.shortcut_open = QShortcut(QKeySequence('Ctrl+d'), self)
         self.shortcut_open.activated.connect(self.e_push_del_clk)
 
-##############################################이하 EQP#############################################
-        #EQP - ftp 시작
-
+        #########################EQP Box######################################
         #Line
         self.df_eqp_info = pd.read_csv('info_ip.txt')           #eqp 소스
         self.lineID= set(self.df_eqp_info['Line'])
@@ -98,7 +88,7 @@ class WindowClass(QMainWindow):
         for i in self.lineID:
             self.list_e_line.addItem(i)
 
-        #id_EQP
+        #EQP, Drive
         self.list_e_line.itemClicked.connect(self.e_mk_eqp)
         self.list_e_eqp.itemClicked.connect(self.e_mk_drive)
 
@@ -109,32 +99,32 @@ class WindowClass(QMainWindow):
         self.extID.sort()
         for i in self.extID:
             self.list_e_ext.addItem(i)
-
+        
+        #path1,2,3,4,5 객체 / path1,2,3,4,5 path 문자열
         self.e_path_list = [self.list_e_path1, self.list_e_path2, self.list_e_path3, self.list_e_path4, self.list_e_path5]
         self.e_path_ip = [self.list_e_ip1, self.list_e_ip2, self.list_e_ip3, self.list_e_ip4, self.list_e_ip5]
 
-        #EQP ftp 파일,복사 리스트 생성 / ftp는 클릭해서 드래그해야 하므로 더블클릭 이벤트로 작성
-        self.list_e_eqp.itemClicked.connect(self.e_mk_drive)
-        self.list_e_drive.itemClicked.connect(self.e_mk_path1)
-
+        #ftp, path 제어
+        self.list_e_drive.itemClicked.connect(self.e_mk_path1)              #drive 클릭시 ftp 접속
         self.list_e_path1.itemDoubleClicked.connect(self.e_mk_path2)
         self.list_e_path2.itemDoubleClicked.connect(self.e_mk_path3)
         self.list_e_path3.itemDoubleClicked.connect(self.e_mk_path4)
         self.list_e_path4.itemDoubleClicked.connect(self.e_mk_path5)
         self.list_e_path5.itemDoubleClicked.connect(self.e_path5_dbclk)
-
+        
+        #path5 부가 버튼
         self.push_e_back.clicked.connect(self.e_push_back_clk)
         self.push_e_foward.clicked.connect(self.e_push_fow_clk)
         self.push_e_new.clicked.connect(self.e_push_new_clk)
         self.push_e_del.clicked.connect(self.e_push_del_clk)
 
         ########FTP 다운 관련
-        self.line_e_cur_path.textChanged.connect(self.e_address)
-        self.line_c_cur_path.textChanged.connect(self.c_address)
-        self.list_e_ext.itemSelectionChanged.connect(self.mk_ext_list)
-        #self.list_e_ext.currentItemChanged.connect(self.mk_ext_list)
+        self.line_e_cur_path.textChanged.connect(self.e_address)            #EQP path global 변수로 저장
+        self.line_c_cur_path.textChanged.connect(self.c_address)            #Local Path global 변수로 저장
+        self.list_e_ext.itemSelectionChanged.connect(self.mk_ext_list)      #선택한 확장자 global 변수로 저장
 
-        ########status emit - slot################################3
+        ########status emit-slot################################
+        #drop event 발생시 run / end / idle signal-slot 연결
         #run
         self.list_e_path1.run_signal.connect(self.status_to_run)
         self.list_e_path2.run_signal.connect(self.status_to_run)
@@ -155,7 +145,6 @@ class WindowClass(QMainWindow):
         self.list_e_path3.idle_signal.connect(self.status_to_idle)
         self.list_e_path4.idle_signal.connect(self.status_to_idle)
         self.list_e_path5.idle_signal.connect(self.status_to_idle)
-
         #end to idle
         self.list_e_line.clicked.connect(self.end_to_idle)
         self.list_e_eqp.clicked.connect(self.end_to_idle)
@@ -180,7 +169,8 @@ class WindowClass(QMainWindow):
         self.list_c_drive.itemClicked.connect(self.end_to_idle)
         self.list_c_path.itemClicked.connect(self.end_to_idle)
 
-        #드롭 - 쓰레드 시작, 정지 연결
+        #main thread 기능 시작하면 sub thread 중단(ftp 경로 충돌 방지)
+        #main thread 기능 끝나면 sub thread 시작(ftp 주기적 접속 유지해 ftp 접속 해제 방지)
         self.list_e_path1.thstart_signal.connect(self.threadStart)
         self.list_e_path1.thstop_signal.connect(self.threadStop)
         self.list_e_path2.thstart_signal.connect(self.threadStart)
@@ -194,35 +184,32 @@ class WindowClass(QMainWindow):
         self.list_c_path.thstart_signal.connect(self.threadStart)
         self.list_c_path.thstop_signal.connect(self.threadStop)
 
-        # idle로 다시 바꾸기, idel에 이미지 넣기, fail 처리하기
-        # 특정 단축키 눌렀을 때 중단 기능
-
-        ########보조 push button
+        ########보조 file open push button
         self.push_eqp_info.clicked.connect(self.e_push_open_eqp)
         self.push_ext_info.clicked.connect(self.e_push_open_ext)
         self.push_manual.clicked.connect(self.e_push_open_manual)
         self.push_hotkey.clicked.connect(self.e_push_open_hotkey)
         self.push_c_drive.clicked.connect(self.c_push_open_drive)
 
-############################################################
-##########################ftp 다운 보조 함수##################
-
+    ##########################ftp 다운 보조 함수##########################################
+    #EQP Path 저장
     def e_address(self):
         global ftp_dic
         ftp_dic['e_line'] = self.line_e_cur_path.text()
 
+    #Local Path 저장
     def c_address(self):
         global ftp_dic
         ftp_dic['c_line'] = self.line_c_cur_path.text()
 
+    #확장자 리스트 저장
     def mk_ext_list(self):
         global ftp_dic
         ftp_dic['ext_list'] = [item.text() for item in self.list_e_ext.selectedItems()]
-############################################################
-############################################################
-    # def onPosEvent(self, pos):
-    #     print(pos)
 
+    ###################################################################################
+
+    ##########################file open push button####################################
     #EQP 파일 열기
     def e_push_open_eqp(self):
         os.startfile('info_ip.txt')
@@ -243,6 +230,9 @@ class WindowClass(QMainWindow):
     def c_push_open_drive(self):
         os.startfile('info_local_path.txt')
 
+    ############################################################################################################
+
+    ##############################################EQP Path 제어##################################################
     #EQP List 만들기
     def e_mk_eqp(self):
         e_flag['e_path5'] = 0
@@ -273,7 +263,7 @@ class WindowClass(QMainWindow):
         self.list_e_drive.addItem('E:')
         self.list_e_drive.addItem('C:')
 
-    #본격적으로 eqp path 만들기
+    #EQP path 만들기
     def e_mk_path1(self):
         self.threadStop()
         global ftp
@@ -435,7 +425,6 @@ class WindowClass(QMainWindow):
             elif 'tif' in i[-6:].lower() : icon = QIcon('Icon_picture.png')
             elif 'bmp' in i[-6:].lower() : icon = QIcon('Icon_picture.png')
             else : icon = QIcon('Icon_appeach.png')
-            #else : icon = QIcon('Icon_lion.png')
 
             icon_item = QListWidgetItem(icon, i)
             self.e_path_list[n].addItem(icon_item)
@@ -451,7 +440,6 @@ class WindowClass(QMainWindow):
         global ftp
         t_flag = 0
         origin_ip = self.line_e_cur_path.text()[self.ftp_ip_idx-1:]
-        #chg_ip = origin_ip + s
         ftp_mlsd = list(ftp.mlsd())
         for f in ftp_mlsd:
             #파일명과 확장자 모두 일치해야 함
@@ -608,11 +596,10 @@ class WindowClass(QMainWindow):
             elif properties['type'] == 'dir':
                 self.remove_ftp_dir(f"{c_path}/{name}")
         ftp.rmd(c_path)
+    ################################################################################################################
 
+    #####################################Local path 제어#############################################################
 
-###############################################################################
-#####################################이하 Local#################################
-###############################################################################
     #Local 드라이브 클릭시 작동, 리스트 표현
     def c_drive_clk(self):
         c_flag['c_is_inf'] = 0
@@ -621,8 +608,6 @@ class WindowClass(QMainWindow):
         t = t[t.rfind('#') + 1:]
         #왼쪽 스페이스바 제거
         if t[0] == ' ' : t = t.lstrip()
-        #print(t)
-        #self.line_c_cur_path.setText(self.list_c_drive.currentItem().text())
         self.line_c_cur_path.setText(t)
         self.list_c_path.clear()
         self.arr_c_path_list = self.c_arr(self.line_c_cur_path.text() + '\\')  # 경로의 파일, 폴더 정렬하여 리스트로 반환
@@ -649,7 +634,6 @@ class WindowClass(QMainWindow):
             elif 'tif' in i[-6:].lower() : icon = QIcon('Icon_picture.png')
             elif 'bmp' in i[-6:].lower() : icon = QIcon('Icon_picture.png')
             else : icon = QIcon('Icon_appeach.png')
-            #else : icon = QIcon('Icon_lion.png')
 
             icon_item = QListWidgetItem(icon, i)
             self.list_c_path.addItem(icon_item)
@@ -853,8 +837,9 @@ class WindowClass(QMainWindow):
         except:
             pass
 
-######################################################################################
-##############################Form Code Start#########################################
+    #################################################################################################
+
+    #########################################Form Code Start#########################################
     def setupUi(self, mainWindow):
         mainWindow.setObjectName("mainWindow")
         mainWindow.resize(1249, 872)
@@ -1225,11 +1210,9 @@ class WindowClass(QMainWindow):
         self.push_c_del.setText(_translate("mainWindow", "삭제(del.)"))
         self.label_1.setText(_translate("mainWindow", "Drive"))
         self.push_c_drive.setText(_translate("mainWindow", "Drive 등록"))
-####################################################################################
-##############################Form Code End#########################################
+    #################################################################################################
 
-############################status_signal###########################################
-
+    ############################status_signal_slot###################################################
     #idle 설정
     def mousePressEvent(self, event):
         if self.label_status.text() == 'END':
@@ -1305,8 +1288,10 @@ class WindowClass(QMainWindow):
     @pyqtSlot(int)
     def threadEventHandler(self, n):
         print('main : threadEvent(self,' + str(n) + ')')
+    ####################################################################################################
+    ##################################MainWindow Class 종료##############################################
 
-#쓰레드 class
+#####################################ftp 접속 유지용 thread class#########################################
 class TestThread(QThread):
     threadEvent = QtCore.pyqtSignal(int)
 
@@ -1323,7 +1308,6 @@ class TestThread(QThread):
             print('th : ' + str(self.n))
             self.threadEvent.emit(self.n)
             self.n += 1
-            #self.sleep(1)
         ###쓰레드 접속 설정
             try:
                 ftp.connect(ftp_dic['ip'], 21)
@@ -1338,10 +1322,12 @@ class TestThread(QThread):
             except ftplib.error_perm:
                 pass
 
+            #ftp 접속 주기
             self.sleep(50)
+########################################################################################################
 
-
-#ftp upload
+######################################ftp upload DropEvent##############################################
+#qlistwidget class setting / mk DropEvent
 class Lst_e_path1(QListWidget):
     run_signal = pyqtSignal()
     end_signal = pyqtSignal()
@@ -1485,7 +1471,7 @@ def find_upload_index(f_path,n):
     #print(temp_path[:sum-1])
     return temp_path[:sum-1]
 
-#ftp upload
+#ftp upload func
 def upload_to_eqp(f_dic):       #전체 다운
     global ftp
     #print(f_dic)
@@ -1633,8 +1619,10 @@ def upload_local_Files(local, ftp_path):      #1개 path 다운
                 e_flag['overwrite_u'][file] = 0
                 continue
 
-###########################################################################################
-#ftp download
+########################################################################################################
+
+######################################ftp download DropEvent############################################
+#qlistwidget class setting / mk DropEvent
 class Lst_c_path(QListWidget):
     run_signal = pyqtSignal()
     end_signal = pyqtSignal()
@@ -1850,8 +1838,8 @@ def mkdir_p(path):
             e_flag['ask_cnt'] += 1
             return
 
-#############################################################################
-#################################pgb#########################################
+#########################################################################################################
+
 
 
 if __name__ == "__main__" :
