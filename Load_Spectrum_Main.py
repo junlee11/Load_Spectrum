@@ -17,6 +17,7 @@ import pyautogui
 from dateutil import parser
 from time import sleep
 from PyQt5.QtCore import pyqtSlot, QObject, pyqtSignal
+import subprocess
 
 #hot key 알아내기
 # while True:
@@ -28,7 +29,7 @@ e_flag = {'e_is_path' : 0, 'e_path5' : 0, 'back' : 0, 'e_find' : 0, 'overwrite' 
 ftp_dic = {'e_line' : '', 'c_line' : '', 'item_list' : [], 'ext_list' : [], 'item_list_up' : [], 'id' : '', 'pw' : '', 'ip' : ''}
 cancel_flag = 0
 
-form_class = uic.loadUiType("Load_Main_EQP_Local.ui")[0]
+#form_class = uic.loadUiType("Load_Main_EQP_Local.ui")[0]
 #form_class = uic.loadUiType("Load_Main_Local_EQP.ui")[0]
 
 #class WindowClass(QMainWindow, form_class) :
@@ -56,9 +57,16 @@ class WindowClass(QMainWindow):
         self.th.threadEvent.connect(self.threadEventHandler)
 
         #Local
-        self.list_c_drive.addItem('C:')
-        self.list_c_drive.addItem('D:')
-        self.list_c_drive.addItem('E:')
+        #self.list_c_drive.addItem('C:')
+        #self.list_c_drive.addItem('D:')
+        #self.list_c_drive.addItem('E:')
+        self.df_local = pd.read_csv('info_local_path.txt')
+        self.path_name = set(self.df_local['PathName # Path'])
+        self.path_name = list(self.path_name)
+        self.path_name.sort()
+        for i in self.path_name:
+            self.list_c_drive.addItem(i)
+
         self.list_c_drive.itemClicked.connect(self.c_drive_clk)
         self.list_c_path.itemDoubleClicked.connect(self.c_path_dbclk)
         self.push_c_back.clicked.connect(self.c_push_back_clk)
@@ -83,7 +91,7 @@ class WindowClass(QMainWindow):
         #EQP - ftp 시작
 
         #Line
-        self.df_eqp_info = pd.read_csv('ip_info.txt')           #eqp 소스
+        self.df_eqp_info = pd.read_csv('info_ip.txt')           #eqp 소스
         self.lineID= set(self.df_eqp_info['Line'])
         self.lineID = list(self.lineID)
         self.lineID.sort()
@@ -95,7 +103,7 @@ class WindowClass(QMainWindow):
         self.list_e_eqp.itemClicked.connect(self.e_mk_drive)
 
         #ext
-        self.df_ext = pd.read_csv('ext_info.txt')
+        self.df_ext = pd.read_csv('info_ext.txt')
         self.extID = set(self.df_ext['ext'])
         self.extID = list(self.extID)
         self.extID.sort()
@@ -194,6 +202,7 @@ class WindowClass(QMainWindow):
         self.push_ext_info.clicked.connect(self.e_push_open_ext)
         self.push_manual.clicked.connect(self.e_push_open_manual)
         self.push_hotkey.clicked.connect(self.e_push_open_hotkey)
+        self.push_c_drive.clicked.connect(self.c_push_open_drive)
 
 ############################################################
 ##########################ftp 다운 보조 함수##################
@@ -211,16 +220,16 @@ class WindowClass(QMainWindow):
         ftp_dic['ext_list'] = [item.text() for item in self.list_e_ext.selectedItems()]
 ############################################################
 ############################################################
-    def onPosEvent(self, pos):
-        print(pos)
+    # def onPosEvent(self, pos):
+    #     print(pos)
 
     #EQP 파일 열기
     def e_push_open_eqp(self):
-        os.startfile('ip_info.txt')
+        os.startfile('info_ip.txt')
 
     #확장자 파일 열기
     def e_push_open_ext(self):
-        os.startfile('ext_info.txt')
+        os.startfile('info_ext.txt')
 
     #매뉴얼 파일 열기
     def e_push_open_manual(self):
@@ -228,7 +237,11 @@ class WindowClass(QMainWindow):
 
     #단축키 파일 열기
     def e_push_open_hotkey(self):
-        os.startfile('hotkey_list.txt')
+        os.startfile('info_hotkey.txt')
+
+    #Local 파일 열기
+    def c_push_open_drive(self):
+        os.startfile('info_local_path.txt')
 
     #EQP List 만들기
     def e_mk_eqp(self):
@@ -531,7 +544,7 @@ class WindowClass(QMainWindow):
             self.threadStart()
             return
         
-        #폴더 생성
+        #폴더 생성c
         try:
             ftp.mkd(f_path)
             icon = QIcon('Icon_folder.png')
@@ -604,7 +617,13 @@ class WindowClass(QMainWindow):
     def c_drive_clk(self):
         c_flag['c_is_inf'] = 0
         c_flag['c_fir'] = 1
-        self.line_c_cur_path.setText(self.list_c_drive.currentItem().text())
+        t = self.list_c_drive.currentItem().text()
+        t = t[t.rfind('#') + 1:]
+        #왼쪽 스페이스바 제거
+        if t[0] == ' ' : t = t.lstrip()
+        #print(t)
+        #self.line_c_cur_path.setText(self.list_c_drive.currentItem().text())
+        self.line_c_cur_path.setText(t)
         self.list_c_path.clear()
         self.arr_c_path_list = self.c_arr(self.line_c_cur_path.text() + '\\')  # 경로의 파일, 폴더 정렬하여 리스트로 반환
 
@@ -1119,24 +1138,30 @@ class WindowClass(QMainWindow):
         self.push_c_del.setObjectName("push_c_del")
         self.horizontalLayout_6.addWidget(self.push_c_del)
         self.gridLayout_2.addLayout(self.horizontalLayout_6, 2, 0, 1, 2)
-        self.gridLayout_4 = QtWidgets.QGridLayout()
-        self.gridLayout_4.setObjectName("gridLayout_4")
+        self.verticalLayout_19 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_19.setObjectName("verticalLayout_19")
+        self.horizontalLayout_12 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_12.setObjectName("horizontalLayout_12")
         self.label_1 = QtWidgets.QLabel(self.groupBox_2)
         self.label_1.setMaximumSize(QtCore.QSize(100, 20))
         self.label_1.setAlignment(QtCore.Qt.AlignCenter)
         self.label_1.setObjectName("label_1")
-        self.gridLayout_4.addWidget(self.label_1, 0, 0, 1, 1)
+        self.horizontalLayout_12.addWidget(self.label_1)
+        self.verticalLayout_24 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_24.setSizeConstraint(QtWidgets.QLayout.SetDefaultConstraint)
+        self.verticalLayout_24.setObjectName("verticalLayout_24")
+        self.push_c_drive = QtWidgets.QPushButton(self.groupBox_2)
+        self.push_c_drive.setMaximumSize(QtCore.QSize(100, 16777215))
+        self.push_c_drive.setObjectName("push_c_drive")
+        self.verticalLayout_24.addWidget(self.push_c_drive)
+        self.horizontalLayout_12.addLayout(self.verticalLayout_24)
+        self.verticalLayout_19.addLayout(self.horizontalLayout_12)
         self.list_c_drive = QtWidgets.QListWidget(self.groupBox_2)
-        self.list_c_drive.setMinimumSize(QtCore.QSize(0, 125))
-        self.list_c_drive.setMaximumSize(QtCore.QSize(100, 200))
+        self.list_c_drive.setMinimumSize(QtCore.QSize(0, 110))
+        self.list_c_drive.setMaximumSize(QtCore.QSize(600, 600))
         self.list_c_drive.setObjectName("list_c_drive")
-        self.gridLayout_4.addWidget(self.list_c_drive, 1, 0, 1, 1)
-        # 예비라벨
-        self.label_spare = QtWidgets.QLabel(self.groupBox_2)
-        self.label_spare.setObjectName("label_spare")
-
-        self.gridLayout_4.addWidget(self.label_spare, 1, 1, 1, 1)
-        self.gridLayout_2.addLayout(self.gridLayout_4, 0, 0, 1, 2)
+        self.verticalLayout_19.addWidget(self.list_c_drive)
+        self.gridLayout_2.addLayout(self.verticalLayout_19, 0, 0, 1, 2)
         self.gridLayout_2.setRowStretch(0, 1)
         self.gridLayout_2.setRowStretch(1, 1)
         self.gridLayout_2.setRowStretch(2, 1)
@@ -1192,7 +1217,6 @@ class WindowClass(QMainWindow):
         pix2 = pix.scaled(65, 65)
         self.label_image.setPixmap(pix2)
 
-        #self.label_image.setText(_translate("mainWindow", "image"))
         self.groupBox_2.setTitle(_translate("mainWindow", "Local"))
         self.label_11.setText(_translate("mainWindow", "현재 경로"))
         self.push_c_back.setText(_translate("mainWindow", "◀"))
@@ -1200,7 +1224,7 @@ class WindowClass(QMainWindow):
         self.push_c_new.setText(_translate("mainWindow", "새폴더(n)"))
         self.push_c_del.setText(_translate("mainWindow", "삭제(del.)"))
         self.label_1.setText(_translate("mainWindow", "Drive"))
-        self.label_spare.setText(_translate("mainWindow", ""))
+        self.push_c_drive.setText(_translate("mainWindow", "Drive 등록"))
 ####################################################################################
 ##############################Form Code End#########################################
 
